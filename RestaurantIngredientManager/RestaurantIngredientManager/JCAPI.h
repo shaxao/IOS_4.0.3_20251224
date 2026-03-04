@@ -282,7 +282,7 @@ typedef void (^JCSDKCACHE_STATE)        (JCSDKCacheStatus status)       ;
  
  @param   completion      打印结束回调（在发生异常后不会返回）
  */
-+ (void)cancelJob:(;
++ (void)cancelJob:(nullable DidPrinted_Block)completion;
 
 /**
  蓝牙/Wi-Fi打印完成(打印完成后调用)。
@@ -610,7 +610,7 @@ withTextAlignVertical:(int)textAlignVertical
         withLineMode:(int)lineMode
    withLetterSpacing:(float)letterSpacing
      withLineSpacing:(float)lineSpacing
-       withFontStyle:(nonnull NSArray <NSNumber * _Nonnull>*)fontStyles;
+       withFontStyle:(nonnull NSArray <NSNumber *>*)fontStyles;
 
 
 /**
@@ -709,7 +709,7 @@ withTextAlignVertical:(int)textAlignVertical
           withHeight:(float)h
           withRotate:(int)rotate
         withLineType:(int)lineType
-       withDashWidth:(nullable NSArray <NSNumber * _Nonnull>*)dashWidth;
+       withDashWidth:(nullable NSArray <NSNumber *>*)dashWidth;
 
 
 /**
