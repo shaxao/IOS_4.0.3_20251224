@@ -1,0 +1,106 @@
+name: RestaurantIngredientManager
+
+options:
+  bundleIdPrefix: com.restaurant
+  deploymentTarget:
+    iOS: "13.0"
+  developmentLanguage: zh-Hans
+
+settings:
+  base:
+    PRODUCT_NAME: RestaurantIngredientManager
+    PRODUCT_BUNDLE_IDENTIFIER: com.restaurant.ingredientmanager
+    SWIFT_VERSION: "5.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "13.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    INFOPLIST_FILE: RestaurantIngredientManager/Info.plist
+    SWIFT_OBJC_BRIDGING_HEADER: RestaurantIngredientManager/RestaurantIngredientManager-Bridging-Header.h
+    LIBRARY_SEARCH_PATHS: $(inherited) $(PROJECT_DIR)/RestaurantIngredientManager
+    OTHER_LDFLAGS: -ObjC -ld64
+    CLANG_ENABLE_MODULES: YES
+    CODE_SIGN_STYLE: Automatic
+
+targets:
+  RestaurantIngredientManager:
+    type: application
+    platform: iOS
+    
+    sources:
+      - path: RestaurantIngredientManager
+        excludes:
+          - "*.md"
+          - "*.a"
+          - "*.h"
+          - Info.plist
+          - RestaurantIngredientManager-Bridging-Header.h
+    
+    dependencies:
+      - framework: CoreData.framework
+      - framework: AVFoundation.framework
+      - framework: CoreMedia.framework
+      - framework: Combine.framework
+      - sdk: libiconv.2.tbd
+      - sdk: libbz2.1.0.tbd
+      - path: RestaurantIngredientManager/JCAPI.a
+      - path: RestaurantIngredientManager/JCLPAPI.a
+      - path: RestaurantIngredientManager/libSkiaRenderLibrary.a
+    
+    settings:
+      base:
+        INFOPLIST_FILE: RestaurantIngredientManager/Info.plist
+        SWIFT_OBJC_BRIDGING_HEADER: RestaurantIngredientManager/RestaurantIngredientManager-Bridging-Header.h
+        LIBRARY_SEARCH_PATHS: $(inherited) $(PROJECT_DIR)/RestaurantIngredientManager
+        OTHER_LDFLAGS: -ObjC -ld64
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        DEVELOPMENT_ASSET_PATHS: ""
+        ENABLE_PREVIEWS: YES
+        SWIFT_EMIT_LOC_STRINGS: YES
+        INFOPLIST_KEY_NSCameraUsageDescription: "需要使用相机扫描条形码"
+        INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription: "需要使用蓝牙连接打印机"
+        INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription: "需要使用蓝牙连接打印机"
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+    
+    scheme:
+      testTargets:
+        - RestaurantIngredientManagerTests
+      gatherCoverageData: true
+
+  RestaurantIngredientManagerTests:
+    type: bundle.unit-test
+    platform: iOS
+    
+    sources:
+      - RestaurantIngredientManagerTests
+    
+    dependencies:
+      - target: RestaurantIngredientManager
+    
+    settings:
+      base:
+        INFOPLIST_FILE: RestaurantIngredientManagerTests/Info.plist
+        BUNDLE_LOADER: $(TEST_HOST)
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/RestaurantIngredientManager.app/RestaurantIngredientManager
+
+schemes:
+  RestaurantIngredientManager:
+    build:
+      targets:
+        RestaurantIngredientManager: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: true
+      targets:
+        - RestaurantIngredientManagerTests
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release

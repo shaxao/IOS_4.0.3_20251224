@@ -19,6 +19,35 @@ jobs:
       uses: maxim-lobanov/setup-xcode@v1
       with:
         xcode-version: latest-stable
+    
+    - name: Install xcodegen
+      run: |
+        echo "📦 安装 xcodegen..."
+        brew install xcodegen
+        xcodegen --version
+        
+    - name: Generate Xcode project
+      run: |
+        cd RestaurantIngredientManager
+        echo "🔨 生成 Xcode 项目文件..."
+        
+        # 检查 project.yml 是否存在
+        if [ ! -f "project.yml" ]; then
+          echo "❌ 错误: project.yml 文件不存在"
+          exit 1
+        fi
+        
+        # 生成项目
+        xcodegen generate
+        
+        # 验证生成的项目文件
+        if [ ! -f "RestaurantIngredientManager.xcodeproj/project.pbxproj" ]; then
+          echo "❌ 错误: 项目文件生成失败"
+          exit 1
+        fi
+        
+        FILE_SIZE=$(wc -c < "RestaurantIngredientManager.xcodeproj/project.pbxproj")
+        echo "✅ 项目文件生成成功 (大小: $FILE_SIZE bytes)"
         
     - name: Install dependencies
       run: |
