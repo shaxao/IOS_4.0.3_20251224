@@ -1,5 +1,4 @@
 import SwiftUI
-import PhotosUI
 import UIKit
 
 struct CategoryProfileManagementView: View {
@@ -69,9 +68,9 @@ struct CategoryProfileEditorView: View {
     @State private var selectedPaper = "40×30mm"
     @State private var blocks: [CanvasBlock] = []
     @State private var selectedBlockID: UUID?
-    @State private var pickedPhotoItem: PhotosPickerItem?
     @State private var pendingImage: UIImage?
-    @State private var showingCamera = false
+    @State private var showingImagePicker = false
+    @State private var pickerSourceType: UIImagePickerController.SourceType = .photoLibrary
     @State private var previewData: [String: String] = [
         "name": "牛奶",
         "thawTime": "0年0月0日4时0分",
@@ -132,10 +131,14 @@ struct CategoryProfileEditorView: View {
                     }
                 }
                 HStack {
-                    PhotosPicker("点击上传", selection: $pickedPhotoItem, matching: .images)
+                    Button("点击上传") {
+                        pickerSourceType = .photoLibrary
+                        showingImagePicker = true
+                    }
                     Spacer()
                     Button("拍照") {
-                        showingCamera = true
+                        pickerSourceType = UIImagePickerController.isSourceTypeAvailable(.camera) ? .camera : .photoLibrary
+                        showingImagePicker = true
                     }
                 }
                 if let index = selectedBlockIndex {
@@ -183,25 +186,13 @@ struct CategoryProfileEditorView: View {
         .onAppear {
             loadCanvas(from: profile.activeTemplate.template)
         }
-        .onChange(of: pickedPhotoItem) { item in
-            guard let item else { return }
-            Task {
-                if let data = try? await item.loadTransferable(type: Data.self),
-                   let image = UIImage(data: data) {
-                    let resized = resizeImage(image)
-                    await MainActor.run {
-                        pendingImage = resized
-                        if let index = selectedBlockIndex, blocks[index].kind == .image {
-                            blocks[index].value = "image"
-                        }
-                    }
-                }
-            }
-        }
-        .sheet(isPresented: $showingCamera) {
-            CameraPicker { image in
+        .sheet(isPresented: $showingImagePicker) {
+            ImagePicker(sourceType: pickerSourceType) { image in
                 pendingImage = resizeImage(image)
-                showingCamera = false
+                if let index = selectedBlockIndex, blocks[index].kind == .image {
+                    blocks[index].value = "image"
+                }
+                showingImagePicker = false
             }
         }
         .toolbar {
@@ -414,13 +405,13 @@ struct CategoryProfileEditorView: View {
     }
 }
 
-private struct CameraPicker: UIViewControllerRepresentable {
+private struct ImagePicker: UIViewControllerRepresentable {
+    let sourceType: UIImagePickerController.SourceType
     let onPick: (UIImage) -> Void
-    @Environment(\.dismiss) private var dismiss
 
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let picker = UIImagePickerController()
-        picker.sourceType = UIImagePickerController.isSourceTypeAvailable(.camera) ? .camera : .photoLibrary
+        picker.sourceType = sourceType
         picker.delegate = context.coordinator
         return picker
     }
@@ -428,27 +419,25 @@ private struct CameraPicker: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onPick: onPick, dismiss: dismiss)
+        Coordinator(onPick: onPick)
     }
 
     final class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
         let onPick: (UIImage) -> Void
-        let dismiss: DismissAction
 
-        init(onPick: @escaping (UIImage) -> Void, dismiss: DismissAction) {
+        init(onPick: @escaping (UIImage) -> Void) {
             self.onPick = onPick
-            self.dismiss = dismiss
         }
 
         func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
             if let image = info[.originalImage] as? UIImage {
                 onPick(image)
             }
-            dismiss()
+            picker.dismiss(animated: true)
         }
 
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            dismiss()
+            picker.dismiss(animated: true)
         }
     }
 }
