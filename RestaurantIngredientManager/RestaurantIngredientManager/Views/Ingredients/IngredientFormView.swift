@@ -25,6 +25,7 @@ struct IngredientFormView: View {
     let mode: Mode
     @StateObject private var viewModel: IngredientDetailViewModel
     @State private var showingScanner = false
+    @StateObject private var profileStore = IngredientCategoryProfileStore.shared
     @Environment(\.dismiss) private var dismiss
     
     init(mode: Mode) {
@@ -42,20 +43,34 @@ struct IngredientFormView: View {
             // 基本信息
             Section("基本信息") {
                 TextField("食材名称", text: $viewModel.name)
-                
+
+                Picker("分类", selection: $viewModel.selectedCategoryProfileID) {
+                    ForEach(profileStore.profiles) { profile in
+                        Text(profile.name).tag(profile.id as UUID?)
+                    }
+                }
+
                 Picker("类别", selection: $viewModel.category) {
                     ForEach(Category.allCases, id: \.self) { category in
                         Text(category.rawValue).tag(category)
                     }
                 }
-                
-                HStack {
-                    TextField("当前数量", value: $viewModel.quantity, format: .number)
-                        .keyboardType(.decimalPad)
-                    TextField("单位", text: $viewModel.unit)
-                        .frame(width: 80)
+            }
+
+            if let profile = viewModel.activeCategoryProfile {
+                Section("分类字段") {
+                    ForEach(profile.fields.filter(\.enabled)) { field in
+                        dynamicFieldInput(field: field)
+                    }
                 }
-                
+            }
+            Section("库存") {
+                HStack {
+                    TextField("当前数量（可选）", value: $viewModel.quantity, format: .number)
+                        .keyboardType(.decimalPad)
+                    TextField("单位（可选）", text: $viewModel.unit)
+                        .frame(width: 120)
+                }
                 HStack {
                     Text("最小库存")
                     Spacer()
@@ -66,23 +81,6 @@ struct IngredientFormView: View {
                     Text(viewModel.unit)
                         .foregroundColor(.secondary)
                 }
-            }
-            
-            // 保质期
-            Section("保质期") {
-                DatePicker(
-                    "到期日期",
-                    selection: Binding(
-                        get: { viewModel.expirationDate ?? Date() },
-                        set: { viewModel.expirationDate = $0 }
-                    ),
-                    displayedComponents: .date
-                )
-                
-                Toggle("设置保质期", isOn: Binding(
-                    get: { viewModel.expirationDate != nil },
-                    set: { if $0 { viewModel.expirationDate = Date() } else { viewModel.expirationDate = nil } }
-                ))
             }
             
             // 条形码
@@ -164,6 +162,50 @@ struct IngredientFormView: View {
                     .cornerRadius(10)
                     .shadow(radius: 10)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func dynamicFieldInput(field: IngredientFieldDefinition) -> some View {
+        switch field.key {
+        case .thawTime:
+            Stepper("\(field.alias)：\(viewModel.thawDurationMinutes) 分钟", value: $viewModel.thawDurationMinutes, in: 0...10080)
+        case .preserveTime:
+            Stepper("\(field.alias)：\(viewModel.preserveDurationMinutes) 分钟", value: $viewModel.preserveDurationMinutes, in: 0...43200)
+        case .useTime:
+            HStack {
+                Text(field.alias)
+                Spacer()
+                Text(viewModel.calculatedUseTime.formatted(date: .abbreviated, time: .shortened))
+                    .foregroundColor(.secondary)
+            }
+        case .expTime:
+            HStack {
+                Text(field.alias)
+                Spacer()
+                Text(viewModel.calculatedExpTime.formatted(date: .abbreviated, time: .shortened))
+                    .foregroundColor(.secondary)
+            }
+        case .name:
+            HStack {
+                Text(field.alias)
+                Spacer()
+                Text(viewModel.name)
+                    .foregroundColor(.secondary)
+            }
+        case .stock:
+            TextField(field.alias, value: $viewModel.quantity, format: .number)
+                .keyboardType(.decimalPad)
+        case .unit:
+            TextField(field.alias, text: $viewModel.unit)
+        case .operatorName, .storageCondition:
+            TextField(
+                field.alias,
+                text: Binding(
+                    get: { viewModel.dynamicFieldValues[field.key.rawValue] ?? "" },
+                    set: { viewModel.updateDynamicFieldValue($0, for: field.key) }
+                )
+            )
         }
     }
 }

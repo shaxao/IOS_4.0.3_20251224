@@ -13,6 +13,7 @@ struct PrinterConnectionView: View {
     @StateObject private var viewModel = PrinterViewModel()
     @State private var selectedConnectionType: ConnectionType = .bluetooth
     @State private var showingStatusView = false
+    @State private var isRunningTestPrint = false
     
     enum ConnectionType: String, CaseIterable {
         case bluetooth = "蓝牙"
@@ -45,6 +46,15 @@ struct PrinterConnectionView: View {
                     } label: {
                         Label("查看状态", systemImage: "info.circle")
                     }
+
+                    Button {
+                        Task {
+                            await runTestPrint()
+                        }
+                    } label: {
+                        Label(isRunningTestPrint ? "测试打印中..." : "测试打印", systemImage: "printer.dotmatrix")
+                    }
+                    .disabled(isRunningTestPrint)
                     
                     Button(role: .destructive) {
                         Task {
@@ -123,6 +133,11 @@ struct PrinterConnectionView: View {
         }
         .navigationTitle("打印机")
         .navigationBarTitleDisplayMode(.large)
+        .task {
+            if viewModel.connectedPrinter != nil {
+                await viewModel.refreshStatus()
+            }
+        }
         .sheet(isPresented: $showingStatusView) {
             NavigationView {
                 PrinterStatusView(viewModel: viewModel)
@@ -146,6 +161,31 @@ struct PrinterConnectionView: View {
                 Text(message)
             }
         }
+    }
+
+    private func runTestPrint() async {
+        guard viewModel.connectedPrinter != nil else {
+            viewModel.errorMessage = "请先连接打印机"
+            return
+        }
+        isRunningTestPrint = true
+        let template = LabelTemplate(
+            name: "测试打印",
+            width: 40,
+            height: 30,
+            elements: [
+                LabelTemplate.LabelElement(type: .text, x: 2, y: 2, width: 36, height: 8, fontSize: 12, content: "title"),
+                LabelTemplate.LabelElement(type: .text, x: 2, y: 12, width: 36, height: 6, fontSize: 9, content: "time"),
+                LabelTemplate.LabelElement(type: .qrCode, x: 24, y: 18, width: 14, height: 10, content: "qrData")
+            ]
+        )
+        let data = [
+            "title": "Printer Test / 测试标签",
+            "time": Date().formatted(date: .numeric, time: .shortened),
+            "qrData": UUID().uuidString
+        ]
+        _ = await viewModel.printLabel(template: template, data: data)
+        isRunningTestPrint = false
     }
 }
 

@@ -209,6 +209,7 @@ class PrinterService: PrinterServiceProtocol {
                 
                 var status = PrinterStatus()
                 status.isConnected = true
+                status.lastErrorMessage = nil
                 
                 // 解析盖子状态 (0=打开, 1=关闭)
                 if let coverValue = info["1"] as? String, let coverInt = Int(coverValue) {
@@ -357,7 +358,12 @@ class PrinterService: PrinterServiceProtocol {
         
         switch element.type {
         case .text:
-            guard let content = element.content, let dataValue = data[content] else {
+            guard let content = element.content else {
+                return
+            }
+            let key = normalizePlaceholder(content)
+            let dataValue = data[key] ?? LabelTemplateEngine.render(content, with: data)
+            if dataValue.isEmpty {
                 return
             }
             let fontSize = Float(element.fontSize ?? 12)
@@ -377,7 +383,12 @@ class PrinterService: PrinterServiceProtocol {
             )
             
         case .qrCode:
-            guard let content = element.content, let dataValue = data[content] else {
+            guard let content = element.content else {
+                return
+            }
+            let key = normalizePlaceholder(content)
+            let dataValue = data[key] ?? LabelTemplateEngine.render(content, with: data)
+            if dataValue.isEmpty {
                 return
             }
             JCAPI.drawLableQrCode(
@@ -389,7 +400,12 @@ class PrinterService: PrinterServiceProtocol {
             )
             
         case .barcode:
-            guard let content = element.content, let dataValue = data[content] else {
+            guard let content = element.content else {
+                return
+            }
+            let key = normalizePlaceholder(content)
+            let dataValue = data[key] ?? LabelTemplateEngine.render(content, with: data)
+            if dataValue.isEmpty {
                 return
             }
             let fontSize = Float(element.fontSize ?? 3)
@@ -453,7 +469,27 @@ class PrinterService: PrinterServiceProtocol {
         case "21": return "边距设置错误"
         case "22": return "通讯异常"
         case "23": return "打印机断开"
+        case "24": return "标签仓打开"
+        case "25": return "标签仓异常"
+        case "26": return "传感器异常"
+        case "27": return "命令不支持"
+        case "28": return "参数错误"
+        case "29": return "数据长度错误"
+        case "30": return "任务超时"
+        case "31": return "缓存不足"
+        case "32": return "打印头过热保护"
+        case "33": return "驱动电压异常"
+        case "34": return "电机异常"
+        case "35": return "切刀异常"
+        case "36": return "回卷异常"
+        case "37": return "任务被取消"
+        case "50": return "设备忙碌，请稍后重试"
+        case "51": return "通信超时，请检查连接"
         default: return "未知错误（代码：\(code)）"
         }
+    }
+
+    private func normalizePlaceholder(_ raw: String) -> String {
+        raw.replacingOccurrences(of: "{{", with: "").replacingOccurrences(of: "}}", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

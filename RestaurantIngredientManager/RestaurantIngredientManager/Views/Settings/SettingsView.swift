@@ -12,6 +12,7 @@ import SwiftUI
 struct SettingsView: View {
     @AppStorage("selectedLanguage") private var selectedLanguage = "zh-Hans"
     @AppStorage("expiryWarningDays") private var expiryWarningDays = 3
+    @AppStorage("ui.debug.topBanner.enabled") private var showTopPlaceholder = false
     @State private var showingAbout = false
     
     var body: some View {
@@ -32,9 +33,19 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
+
+            Section("界面") {
+                Toggle("显示顶部占位条", isOn: $showTopPlaceholder)
+            }
             
             // 数据管理
             Section("数据管理") {
+                NavigationLink {
+                    CategoryProfileManagementView()
+                } label: {
+                    Label("分类与标签模板", systemImage: "tag")
+                }
+
                 NavigationLink {
                     SupplierListView()
                 } label: {

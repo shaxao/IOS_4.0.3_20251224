@@ -67,10 +67,7 @@ struct Ingredient: Identifiable, Codable, Equatable {
         guard quantity >= 0 else {
             throw ValidationError.negativeQuantity
         }
-        guard !unit.isEmpty else {
-            throw ValidationError.emptyUnit
-        }
-        guard unit.count <= 20 else {
+        if !unit.isEmpty && unit.count > 20 {
             throw ValidationError.unitTooLong
         }
         guard minimumStockThreshold >= 0 else {
@@ -114,7 +111,6 @@ struct Ingredient: Identifiable, Codable, Equatable {
         case emptyName
         case nameTooLong
         case negativeQuantity
-        case emptyUnit
         case unitTooLong
         case negativeThreshold
         
@@ -126,13 +122,31 @@ struct Ingredient: Identifiable, Codable, Equatable {
                 return "食材名称不能超过100个字符"
             case .negativeQuantity:
                 return "数量不能为负数"
-            case .emptyUnit:
-                return "单位不能为空"
             case .unitTooLong:
                 return "单位不能超过20个字符"
             case .negativeThreshold:
                 return "最低库存阈值不能为负数"
             }
         }
+    }
+}
+
+extension Ingredient {
+    var notesPayload: IngredientNotesPayload {
+        IngredientNotesCodec.decode(notes)
+    }
+
+    var plainNotes: String? {
+        notesPayload.plainNotes
+    }
+
+    var dynamicMetadata: IngredientDynamicMetadata? {
+        notesPayload.metadata
+    }
+
+    func applying(plainNotes: String?, metadata: IngredientDynamicMetadata?) -> Ingredient {
+        var updated = self
+        updated.notes = IngredientNotesCodec.encode(plainNotes: plainNotes, metadata: metadata)
+        return updated
     }
 }

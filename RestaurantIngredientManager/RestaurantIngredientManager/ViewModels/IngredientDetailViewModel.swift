@@ -46,6 +46,13 @@ class IngredientDetailViewModel: ObservableObject {
     
     /// 备注
     @Published var notes: String?
+
+    @Published var selectedCategoryProfileID: UUID?
+    @Published var thawDurationMinutes: Int = 0
+    @Published var preserveDurationMinutes: Int = 0
+    @Published private(set) var calculatedUseTime: Date = Date()
+    @Published private(set) var calculatedExpTime: Date = Date()
+    @Published var dynamicFieldValues: [String: String] = [:]
     
     /// 是否正在保存
     @Published private(set) var isSaving: Bool = false
@@ -62,6 +69,7 @@ class IngredientDetailViewModel: ObservableObject {
     // MARK: - Private Properties
     
     private let repository: IngredientRepository
+    private let categoryStore: IngredientCategoryProfileStore
     private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Computed Properties
@@ -73,13 +81,25 @@ class IngredientDetailViewModel: ObservableObject {
     
     /// 是否可以保存
     var canSave: Bool {
-        !name.isEmpty && !unit.isEmpty && validationErrors.isEmpty
+        !name.isEmpty && validationErrors.isEmpty
+    }
+
+    var activeCategoryProfile: IngredientCategoryProfile? {
+        categoryStore.profile(by: selectedCategoryProfileID)
     }
     
     // MARK: - Initialization
     
-    init(repository: IngredientRepository = IngredientRepository.shared) {
+    init(
+        repository: IngredientRepository = IngredientRepository.shared,
+        categoryStore: IngredientCategoryProfileStore = .shared
+    ) {
         self.repository = repository
+        self.categoryStore = categoryStore
+        if let defaultProfile = categoryStore.profiles.first {
+            self.selectedCategoryProfileID = defaultProfile.id
+        }
+        recalculateTimes()
         setupValidation()
     }
     
@@ -103,7 +123,21 @@ class IngredientDetailViewModel: ObservableObject {
         supplier = ingredient.supplier
         storageLocation = ingredient.storageLocation
         barcode = ingredient.barcode
-        notes = ingredient.notes
+        notes = ingredient.plainNotes
+        if let metadata = ingredient.dynamicMetadata {
+            selectedCategoryProfileID = metadata.categoryProfileID
+            thawDurationMinutes = metadata.thawMinutes ?? 0
+            preserveDurationMinutes = metadata.preserveMinutes ?? 0
+            dynamicFieldValues = metadata.fieldValues
+            calculatedUseTime = metadata.useTimestamp ?? Date()
+            calculatedExpTime = metadata.expTimestamp ?? ingredient.expirationDate
+        } else {
+            if let profile = categoryStore.profiles.first(where: { $0.name == ingredient.category.rawValue }) {
+                selectedCategoryProfileID = profile.id
+            }
+            dynamicFieldValues = [:]
+            recalculateTimes()
+        }
     }
     
     /// 通过ID加载食材
@@ -148,29 +182,53 @@ class IngredientDetailViewModel: ObservableObject {
                 ingredient.quantity = quantity
                 ingredient.unit = unit
                 ingredient.minimumStockThreshold = minimumStockThreshold
-                ingredient.expirationDate = expirationDate ?? Date()
+                let timeline = currentTimeline()
+                ingredient.expirationDate = timeline.expTime
                 ingredient.supplier = supplier
                 ingredient.storageLocation = storageLocation
                 ingredient.barcode = barcode
-                ingredient.notes = notes
+                let profile = activeCategoryProfile
+                let metadata = IngredientDynamicMetadata(
+                    categoryProfileID: profile?.id,
+                    categoryProfileName: profile?.name,
+                    thawMinutes: thawDurationMinutes,
+                    preserveMinutes: preserveDurationMinutes,
+                    thawTimestamp: timeline.thawTime,
+                    useTimestamp: timeline.useTime,
+                    expTimestamp: timeline.expTime,
+                    fieldValues: dynamicFieldValues
+                )
+                ingredient = ingredient.applying(plainNotes: notes, metadata: metadata)
                 ingredient.updatedAt = Date()
                 
                 try await repository.update(ingredient)
             } else {
+                let timeline = currentTimeline()
+                let profile = activeCategoryProfile
+                let metadata = IngredientDynamicMetadata(
+                    categoryProfileID: profile?.id,
+                    categoryProfileName: profile?.name,
+                    thawMinutes: thawDurationMinutes,
+                    preserveMinutes: preserveDurationMinutes,
+                    thawTimestamp: timeline.thawTime,
+                    useTimestamp: timeline.useTime,
+                    expTimestamp: timeline.expTime,
+                    fieldValues: dynamicFieldValues
+                )
                 // 创建新食材
                 let ingredient = Ingredient(
                     name: name,
                     category: category,
                     quantity: quantity,
                     unit: unit,
-                    expirationDate: expirationDate ?? Date(),
+                    expirationDate: timeline.expTime,
                     storageLocation: storageLocation,
                     supplier: supplier,
                     barcode: barcode,
                     qrCode: nil,
                     minimumStockThreshold: minimumStockThreshold,
-                    notes: notes
-                )
+                    notes: nil
+                ).applying(plainNotes: notes, metadata: metadata)
                 
                 try await repository.create(ingredient)
                 ingredientID = ingredient.id
@@ -224,8 +282,25 @@ class IngredientDetailViewModel: ObservableObject {
         storageLocation = StorageLocation(name: "默认位置", type: .custom)
         barcode = nil
         notes = nil
+        selectedCategoryProfileID = categoryStore.profiles.first?.id
+        thawDurationMinutes = 0
+        preserveDurationMinutes = 0
+        dynamicFieldValues = [:]
+        recalculateTimes()
         errorMessage = nil
         validationErrors = []
+    }
+
+    func updateDynamicFieldValue(_ value: String, for key: IngredientFieldKey) {
+        dynamicFieldValues[key.rawValue] = value
+    }
+
+    func recalculateTimes(from thawTime: Date = Date()) {
+        let useTime = Calendar.current.date(byAdding: .minute, value: thawDurationMinutes, to: thawTime) ?? thawTime
+        let expTime = Calendar.current.date(byAdding: .minute, value: preserveDurationMinutes, to: useTime) ?? useTime
+        calculatedUseTime = useTime
+        calculatedExpTime = expTime
+        expirationDate = expTime
     }
     
     // MARK: - Private Methods
@@ -247,9 +322,7 @@ class IngredientDetailViewModel: ObservableObject {
                 // 验证单位
                 $unit.map { unit -> [String] in
                     var errors: [String] = []
-                    if unit.isEmpty {
-                        errors.append("单位不能为空")
-                    } else if unit.count > 20 {
+                    if unit.count > 20 {
                         errors.append("单位不能超过20个字符")
                     }
                     return errors
@@ -275,5 +348,20 @@ class IngredientDetailViewModel: ObservableObject {
                 nameErrors + unitErrors + quantityErrors + stockErrors
             }
             .assign(to: &$validationErrors)
+
+        Publishers.CombineLatest($thawDurationMinutes, $preserveDurationMinutes)
+            .sink { [weak self] _, _ in
+                self?.recalculateTimes()
+            }
+            .store(in: &cancellables)
+    }
+}
+
+private extension IngredientDetailViewModel {
+    func currentTimeline() -> (thawTime: Date, useTime: Date, expTime: Date) {
+        let thawTime = Date()
+        let useTime = Calendar.current.date(byAdding: .minute, value: thawDurationMinutes, to: thawTime) ?? thawTime
+        let expTime = Calendar.current.date(byAdding: .minute, value: preserveDurationMinutes, to: useTime) ?? useTime
+        return (thawTime, useTime, expTime)
     }
 }

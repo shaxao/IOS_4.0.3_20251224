@@ -137,6 +137,18 @@ class PrinterViewModel: ObservableObject {
             errorMessage = "请先连接打印机"
             return false
         }
+        if !printerStatus.isConnected {
+            errorMessage = "打印机未连接，请前往打印设置重新连接"
+            return false
+        }
+        if printerStatus.coverStatus == .open {
+            errorMessage = "打印机盖子打开，请关闭后重试"
+            return false
+        }
+        if printerStatus.paperStatus == .out {
+            errorMessage = "打印机缺纸，请补纸后重试"
+            return false
+        }
         
         isPrinting = true
         errorMessage = nil
@@ -164,7 +176,14 @@ class PrinterViewModel: ObservableObject {
         errorMessage = nil
         batchPrintProgress = 0
         
-        let result = try! await printerService.printBatch(labels: labels)
+        let result: BatchPrintResult
+        do {
+            result = try await printerService.printBatch(labels: labels)
+        } catch {
+            errorMessage = "批量打印失败: \(error.localizedDescription)"
+            isPrinting = false
+            return BatchPrintResult(totalJobs: labels.count, successfulJobs: 0, failedJobs: labels.indices.map { ($0, error) })
+        }
         
         batchPrintProgress = 1.0
         isPrinting = false
@@ -180,14 +199,36 @@ class PrinterViewModel: ObservableObject {
     
     /// 打印食材标签
     func printIngredientLabel(_ ingredient: Ingredient, template: LabelTemplate) async -> Bool {
-        let data: [String: String] = [
+        var data: [String: String] = [
             "name": ingredient.name,
             "category": ingredient.category.rawValue,
-            "quantity": "\(ingredient.quantity) \(ingredient.unit)",
+            "quantity": ingredient.unit.isEmpty ? "\(ingredient.quantity)" : "\(ingredient.quantity) \(ingredient.unit)",
             "expiryDate": ingredient.expirationDate.formatted(date: .abbreviated, time: .omitted),
             "barcode": ingredient.barcode ?? ingredient.id.uuidString,
             "qrData": ingredient.id.uuidString
         ]
+        if ingredient.quantity > 0 {
+            data["stock"] = ingredient.quantity.formatted()
+        }
+        if !ingredient.unit.isEmpty {
+            data["unit"] = ingredient.unit
+        }
+        if let metadata = ingredient.dynamicMetadata {
+            if let thaw = metadata.thawTimestamp {
+                data["thawTime"] = thaw.formatted(date: .numeric, time: .shortened)
+            }
+            if let use = metadata.useTimestamp {
+                data["useTime"] = use.formatted(date: .numeric, time: .shortened)
+            }
+            if let exp = metadata.expTimestamp {
+                data["expTime"] = exp.formatted(date: .numeric, time: .shortened)
+            }
+            metadata.fieldValues.forEach { key, value in
+                if !value.isEmpty {
+                    data[key] = value
+                }
+            }
+        }
         
         return await printLabel(template: template, data: data)
     }
@@ -195,14 +236,36 @@ class PrinterViewModel: ObservableObject {
     /// 批量打印食材标签
     func printIngredientLabels(_ ingredients: [Ingredient], template: LabelTemplate) async -> BatchPrintResult {
         let labels = ingredients.map { ingredient -> (LabelTemplate, [String: String]) in
-            let data: [String: String] = [
+            var data: [String: String] = [
                 "name": ingredient.name,
                 "category": ingredient.category.rawValue,
-                "quantity": "\(ingredient.quantity) \(ingredient.unit)",
+                "quantity": ingredient.unit.isEmpty ? "\(ingredient.quantity)" : "\(ingredient.quantity) \(ingredient.unit)",
                 "expiryDate": ingredient.expirationDate.formatted(date: .abbreviated, time: .omitted),
                 "barcode": ingredient.barcode ?? ingredient.id.uuidString,
                 "qrData": ingredient.id.uuidString
             ]
+            if ingredient.quantity > 0 {
+                data["stock"] = ingredient.quantity.formatted()
+            }
+            if !ingredient.unit.isEmpty {
+                data["unit"] = ingredient.unit
+            }
+            if let metadata = ingredient.dynamicMetadata {
+                if let thaw = metadata.thawTimestamp {
+                    data["thawTime"] = thaw.formatted(date: .numeric, time: .shortened)
+                }
+                if let use = metadata.useTimestamp {
+                    data["useTime"] = use.formatted(date: .numeric, time: .shortened)
+                }
+                if let exp = metadata.expTimestamp {
+                    data["expTime"] = exp.formatted(date: .numeric, time: .shortened)
+                }
+                metadata.fieldValues.forEach { key, value in
+                    if !value.isEmpty {
+                        data[key] = value
+                    }
+                }
+            }
             return (template, data)
         }
         

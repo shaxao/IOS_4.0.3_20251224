@@ -12,8 +12,10 @@ import SwiftUI
 struct LabelPrintView: View {
     let ingredient: Ingredient
     @StateObject private var viewModel = PrinterViewModel()
+    @StateObject private var profileStore = IngredientCategoryProfileStore.shared
     @State private var selectedTemplate: LabelTemplate?
     @State private var copies: Int = 1
+    @State private var showingPrinterSettings = false
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
@@ -62,6 +64,9 @@ struct LabelPrintView: View {
                 } else {
                     Text("未连接打印机")
                         .foregroundColor(.secondary)
+                    Button("前往打印设置") {
+                        showingPrinterSettings = true
+                    }
                 }
             }
             
@@ -99,6 +104,9 @@ struct LabelPrintView: View {
         }
         .navigationTitle("打印标签")
         .navigationBarTitleDisplayMode(.inline)
+        .task {
+            await viewModel.refreshStatus()
+        }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("取消") {
@@ -113,6 +121,11 @@ struct LabelPrintView: View {
         } message: {
             if let error = viewModel.errorMessage {
                 Text(error)
+            }
+        }
+        .sheet(isPresented: $showingPrinterSettings) {
+            NavigationView {
+                PrinterConnectionView()
             }
         }
         .alert("成功", isPresented: .constant(viewModel.successMessage != nil)) {
@@ -130,7 +143,12 @@ struct LabelPrintView: View {
     // MARK: - Private Methods
     
     private func printLabel() async {
-        let template = selectedTemplate ?? createDefaultTemplate()
+        let template = selectedTemplate ?? createCategoryTemplate()
+        if viewModel.connectedPrinter == nil || !viewModel.printerStatus.isConnected {
+            viewModel.errorMessage = "打印机未连接，请先在打印设置中连接"
+            showingPrinterSettings = true
+            return
+        }
         
         if copies == 1 {
             _ = await viewModel.printIngredientLabel(ingredient, template: template)
@@ -175,6 +193,14 @@ struct LabelPrintView: View {
                 )
             ]
         )
+    }
+
+    private func createCategoryTemplate() -> LabelTemplate {
+        if let profileID = ingredient.dynamicMetadata?.categoryProfileID,
+           let profile = profileStore.profile(by: profileID) {
+            return LabelTemplateEngine.makeTemplateFromText(profile.activeTemplate.template, name: "\(profile.name)模板", width: 40, height: 30)
+        }
+        return createDefaultTemplate()
     }
     
     private func createLabelData() -> [String: String] {

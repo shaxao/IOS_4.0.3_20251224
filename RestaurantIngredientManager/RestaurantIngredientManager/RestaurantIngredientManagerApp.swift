@@ -43,16 +43,16 @@ struct RestaurantIngredientManagerApp: App {
     // MARK: - Private Methods
     
     private func configureAppearance() {
-        // 配置导航栏外观
         let appearance = UINavigationBarAppearance()
-        appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = UIColor.systemBackground
+        appearance.configureWithTransparentBackground()
+        appearance.backgroundColor = .clear
+        appearance.shadowColor = .clear
         
         UINavigationBar.appearance().standardAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
         UINavigationBar.appearance().compactAppearance = appearance
+        UINavigationBar.appearance().isTranslucent = true
         
-        // 配置TabBar外观
         let tabBarAppearance = UITabBarAppearance()
         tabBarAppearance.configureWithOpaqueBackground()
         

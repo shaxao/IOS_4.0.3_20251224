@@ -21,6 +21,15 @@ struct PrinterStatus: Equatable {
     
     /// 盖子状态
     var coverStatus: CoverStatus
+
+    var lastErrorMessage: String?
+
+    enum SyncState: String, Codable {
+        case connected = "已连接"
+        case disconnected = "未连接"
+        case outOfPaper = "缺纸"
+        case error = "报错"
+    }
     
     /// 纸张状态枚举
     enum PaperStatus: String, Codable {
@@ -41,6 +50,7 @@ struct PrinterStatus: Equatable {
         self.paperStatus = .normal
         self.batteryLevel = nil
         self.coverStatus = .closed
+        self.lastErrorMessage = nil
     }
     
     /// 初始化完整状态
@@ -49,11 +59,25 @@ struct PrinterStatus: Equatable {
     ///   - paperStatus: 纸张状态
     ///   - batteryLevel: 电池电量
     ///   - coverStatus: 盖子状态
-    init(isConnected: Bool, paperStatus: PaperStatus, batteryLevel: Int?, coverStatus: CoverStatus) {
+    init(isConnected: Bool, paperStatus: PaperStatus, batteryLevel: Int?, coverStatus: CoverStatus, lastErrorMessage: String? = nil) {
         self.isConnected = isConnected
         self.paperStatus = paperStatus
         self.batteryLevel = batteryLevel
         self.coverStatus = coverStatus
+        self.lastErrorMessage = lastErrorMessage
+    }
+
+    var syncState: SyncState {
+        if !isConnected {
+            return .disconnected
+        }
+        if paperStatus == .out {
+            return .outOfPaper
+        }
+        if coverStatus == .open || (lastErrorMessage?.isEmpty == false) {
+            return .error
+        }
+        return .connected
     }
     
     /// 是否可以打印
@@ -84,6 +108,9 @@ struct PrinterStatus: Equatable {
         if let battery = batteryLevel, battery < 20 {
             warnings.append("打印机电量低（\(battery)%）")
         }
+        if let lastErrorMessage, !lastErrorMessage.isEmpty {
+            warnings.append(lastErrorMessage)
+        }
         
         return warnings
     }
@@ -92,6 +119,6 @@ struct PrinterStatus: Equatable {
 // MARK: - Codable
 extension PrinterStatus: Codable {
     enum CodingKeys: String, CodingKey {
-        case isConnected, paperStatus, batteryLevel, coverStatus
+        case isConnected, paperStatus, batteryLevel, coverStatus, lastErrorMessage
     }
 }
