@@ -18,6 +18,9 @@ class CIGuardrailsTest(unittest.TestCase):
         self.assertIn("Validate required SDK binaries", content)
         self.assertIn("Install xcodegen with retry", content)
         self.assertIn("concurrency:", content)
+        self.assertIn("Package unsigned IPA fallback", content)
+        self.assertIn("Verify IPA output", content)
+        self.assertIn("if-no-files-found: error", content)
 
     def test_sdk_binaries_are_not_lfs_pointer_files(self) -> None:
         for lib_name in REQUIRED_LIBS:

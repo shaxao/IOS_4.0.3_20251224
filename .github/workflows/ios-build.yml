@@ -197,6 +197,45 @@ jobs:
           echo "📂 Archive 路径: $PWD/build/RestaurantIngredientManager.xcarchive"
         fi
 
+    - name: Package unsigned IPA fallback
+      if: success()
+      run: |
+        set -euo pipefail
+        cd RestaurantIngredientManager
+
+        if ls build/*.ipa >/dev/null 2>&1; then
+          echo "✅ 已存在 xcodebuild 导出的 IPA，跳过兜底打包"
+          ls -lh build/*.ipa
+          exit 0
+        fi
+
+        APP_PATH="$PWD/build/RestaurantIngredientManager.xcarchive/Products/Applications/RestaurantIngredientManager.app"
+        if [ ! -d "$APP_PATH" ]; then
+          echo "❌ 未找到 archive 内的 .app，无法打包兜底 IPA"
+          exit 1
+        fi
+
+        rm -rf "$PWD/build/Payload"
+        mkdir -p "$PWD/build/Payload"
+        cp -R "$APP_PATH" "$PWD/build/Payload/"
+        cd "$PWD/build"
+        ditto -c -k --sequesterRsrc --keepParent Payload RestaurantIngredientManager-unsigned.ipa
+        rm -rf Payload
+        echo "✅ 已生成兜底 IPA: $PWD/RestaurantIngredientManager-unsigned.ipa"
+        ls -lh *.ipa
+
+    - name: Verify IPA output
+      if: success()
+      run: |
+        set -euo pipefail
+        cd RestaurantIngredientManager
+        if ! ls build/*.ipa >/dev/null 2>&1; then
+          echo "❌ 未生成任何 IPA 文件"
+          exit 1
+        fi
+        echo "✅ 可上传的 IPA 文件:"
+        ls -lh build/*.ipa
+
     - name: Upload Archive
       if: success()
       uses: actions/upload-artifact@v4
@@ -212,4 +251,4 @@ jobs:
         name: RestaurantIngredientManager-IPA
         path: RestaurantIngredientManager/build/*.ipa
         retention-days: 30
-        if-no-files-found: warn
+        if-no-files-found: error
