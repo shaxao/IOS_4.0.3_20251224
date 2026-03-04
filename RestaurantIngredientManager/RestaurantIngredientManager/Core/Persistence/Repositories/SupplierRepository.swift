@@ -24,6 +24,7 @@ protocol SupplierRepositoryProtocol {
 /// 供应商仓储实现
 /// 满足需求：12.1, 12.2, 12.4, 12.5, 12.6
 class SupplierRepository: SupplierRepositoryProtocol {
+    static let shared = SupplierRepository()
     private let persistenceController: PersistenceController
     private let logger = Logger(subsystem: "com.restaurant.ingredientmanager", category: "SupplierRepository")
     
