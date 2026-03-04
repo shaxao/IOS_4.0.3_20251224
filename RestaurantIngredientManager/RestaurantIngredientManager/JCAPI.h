@@ -610,7 +610,7 @@ withTextAlignVertical:(int)textAlignVertical
         withLineMode:(int)lineMode
    withLetterSpacing:(float)letterSpacing
      withLineSpacing:(float)lineSpacing
-       withFontStyle:(NSArray <NSNumber *>*)fontStyles;
+       withFontStyle:(nonnull NSArray <NSNumber * _Nonnull>*)fontStyles;
 
 
 /**
