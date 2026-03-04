@@ -709,7 +709,7 @@ withTextAlignVertical:(int)textAlignVertical
           withHeight:(float)h
           withRotate:(int)rotate
         withLineType:(int)lineType
-       withDashWidth:(nullable NSArray <NSNumber *>*)dashWidth;
+       withDashWidth:(nullable NSArray <NSNumber * _Nonnull>*)dashWidth;
 
 
 /**
