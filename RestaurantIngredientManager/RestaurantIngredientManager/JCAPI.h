@@ -789,7 +789,7 @@ withImageProcessingValue:(float)imageProcessingValue;
 
  @return 返回生成的标签预览图像。
  */
-+(UIImage *)generateImagePreviewImage:(float)displayScale error:(NSError **)error;
++(nullable UIImage *)generateImagePreviewImage:(float)displayScale error:(NSError * _Nullable * _Nullable)error;
 
 
 /**
