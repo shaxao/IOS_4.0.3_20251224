@@ -58,6 +58,10 @@ jobs:
     - name: Build project
       run: |
         cd RestaurantIngredientManager
+        echo "🔨 开始构建项目..."
+        
+        # 使用 xcodebuild 构建并捕获所有输出
+        set +e  # 暂时禁用错误退出
         xcodebuild -project RestaurantIngredientManager.xcodeproj \
           -scheme RestaurantIngredientManager \
           -sdk iphoneos \
@@ -66,22 +70,89 @@ jobs:
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGNING_ALLOWED=NO \
-          archive
+          -allowProvisioningUpdates \
+          archive 2>&1 | tee build.log
+        
+        BUILD_EXIT_CODE=${PIPESTATUS[0]}
+        set -e  # 重新启用错误退出
+        
+        # 如果构建失败，显示详细错误
+        if [ $BUILD_EXIT_CODE -ne 0 ]; then
+          echo ""
+          echo "❌ ============================================"
+          echo "❌ 构建失败！错误代码: $BUILD_EXIT_CODE"
+          echo "❌ ============================================"
+          echo ""
+          
+          # 显示所有错误
+          echo "📋 所有错误信息:"
+          grep -i "error:" build.log || echo "未找到 'error:' 标记"
+          
+          echo ""
+          echo "⚠️  所有警告信息:"
+          grep -i "warning:" build.log | head -20 || echo "未找到警告"
+          
+          echo ""
+          echo "🔍 Swift 编译错误:"
+          grep -A 3 "Swift Compiler Error" build.log || echo "未找到 Swift 编译错误"
+          
+          echo ""
+          echo "🔍 链接错误:"
+          grep -A 3 "Linker command failed" build.log || echo "未找到链接错误"
+          
+          echo ""
+          echo "📄 完整构建日志已保存到 build.log"
+          
+          exit 1
+        fi
+        
+        echo "✅ 构建成功！"
+          
+    - name: Upload Build Log
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-log
+        path: RestaurantIngredientManager/build.log
+        retention-days: 7
           
     - name: Export IPA
+      if: success()
       run: |
         cd RestaurantIngredientManager
+        
+        # 检查 archive 是否存在
+        if [ ! -d "$PWD/build/RestaurantIngredientManager.xcarchive" ]; then
+          echo "❌ Archive 不存在，跳过 IPA 导出"
+          exit 1
+        fi
+        
+        echo "📦 导出 IPA..."
         xcodebuild -exportArchive \
           -archivePath $PWD/build/RestaurantIngredientManager.xcarchive \
           -exportOptionsPlist ExportOptions.plist \
           -exportPath $PWD/build \
           -allowProvisioningUpdates \
           CODE_SIGN_IDENTITY="" \
-          CODE_SIGNING_REQUIRED=NO
+          CODE_SIGNING_REQUIRED=NO || {
+            echo "⚠️  IPA 导出失败（可能由于代码签名问题）"
+            echo "📱 但 .app 文件已在 archive 中生成"
+            echo "📂 Archive 路径: $PWD/build/RestaurantIngredientManager.xcarchive"
+          }
+          
+    - name: Upload Archive
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: RestaurantIngredientManager-Archive
+        path: RestaurantIngredientManager/build/RestaurantIngredientManager.xcarchive
+        retention-days: 30
           
     - name: Upload IPA
+      if: success()
       uses: actions/upload-artifact@v4
       with:
         name: RestaurantIngredientManager-IPA
         path: RestaurantIngredientManager/build/*.ipa
         retention-days: 30
+        if-no-files-found: warn

@@ -125,7 +125,8 @@ class PersistenceController: ObservableObject {
     
     /// 保存主上下文
     /// - Throws: PersistenceError.saveFailed 如果保存失败
-    func save() throws {
+    @MainActor
+    func save() async throws {
         let context = container.viewContext
         
         guard context.hasChanges else {
