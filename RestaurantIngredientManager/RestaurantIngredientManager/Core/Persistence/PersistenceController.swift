@@ -172,18 +172,20 @@ class PersistenceController: ObservableObject {
     
     /// 异步在后台上下文中执行操作
     /// - Parameter block: 要执行的操作闭包
-    func performBackgroundTaskAsync(_ block: @escaping (NSManagedObjectContext) async throws -> Void) async throws {
+    func performBackgroundTaskAsync<T>(_ block: @escaping (NSManagedObjectContext) async throws -> T) async throws -> T {
         let context = newBackgroundContext()
         
-        try await context.perform {
+        return try await context.perform {
             do {
-                try await block(context)
+                let result = try await block(context)
                 
                 // 如果上下文有更改，保存它
                 if context.hasChanges {
                     try context.save()
                     print("✅ 后台上下文保存成功")
                 }
+                
+                return result
             } catch {
                 print("❌ 后台操作失败: \(error.localizedDescription)")
                 throw PersistenceError.saveFailed(error)
