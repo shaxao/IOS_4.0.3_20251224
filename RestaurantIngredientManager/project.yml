@@ -33,6 +33,7 @@ targets:
           - "*.h"
           - Info.plist
           - RestaurantIngredientManager-Bridging-Header.h
+          - "**/*.md"
     
     dependencies:
       - framework: CoreData.framework

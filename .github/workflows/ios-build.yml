@@ -63,6 +63,9 @@ jobs:
           -sdk iphoneos \
           -configuration Release \
           -archivePath $PWD/build/RestaurantIngredientManager.xcarchive \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO \
           archive
           
     - name: Export IPA
@@ -71,7 +74,10 @@ jobs:
         xcodebuild -exportArchive \
           -archivePath $PWD/build/RestaurantIngredientManager.xcarchive \
           -exportOptionsPlist ExportOptions.plist \
-          -exportPath $PWD/build
+          -exportPath $PWD/build \
+          -allowProvisioningUpdates \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO
           
     - name: Upload IPA
       uses: actions/upload-artifact@v4
