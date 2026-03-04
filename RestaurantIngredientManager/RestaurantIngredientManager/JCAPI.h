@@ -119,8 +119,8 @@ typedef void (^JCSDKCACHE_STATE)        (JCSDKCacheStatus status)       ;
  @param completion 连接状态回调块。当连接状态发生变化时，将调用此回调并传递连接状态的结果。
         参数 `isSuccess` 代表是否成功连接打印机，YES 表示连接成功，NO 表示连接失败。
  */
-+ (void)openPrinter:(NSString *)printerName
-         completion:(DidOpened_Printer_Block)completion;
++ (void)openPrinter:(nonnull NSString *)printerName
+         completion:(nullable DidOpened_Printer_Block)completion;
 
 
 /**
@@ -166,7 +166,7 @@ typedef void (^JCSDKCACHE_STATE)        (JCSDKCacheStatus status)       ;
 
  @param completion Wi-Fi名称的回调。
  */
-+ (void)getWifiConfiguration:(PRINT_DIC_INFO)completion;
++ (void)getWifiConfiguration:(nullable PRINT_DIC_INFO)completion;
 
 
 
@@ -186,8 +186,8 @@ typedef void (^JCSDKCACHE_STATE)        (JCSDKCacheStatus status)       ;
  @param   host              打印机名称。
  @param   completion      连接打印机是否成功。（连接状态改变通过该回调返回）
  */
-+(void)openPrinterHost:(NSString *)host
-            completion:(DidOpened_Printer_Block)completion;
++(void)openPrinterHost:(nonnull NSString *)host
+            completion:(nullable DidOpened_Printer_Block)completion;
 
 /**
 连接指定IP的打印机并进行 Wi-Fi 连接。
@@ -197,9 +197,9 @@ typedef void (^JCSDKCACHE_STATE)        (JCSDKCacheStatus status)       ;
 @param completion 连接状态回调块。当连接状态发生变化时，将调用此回调并传递连接状态的结果。
        参数 `isSuccess` 代表是否成功连接打印机，YES 表示连接成功，NO 表示连接失败。
 */
-+(void)openPrinterHost:(NSString *)host
++(void)openPrinterHost:(nonnull NSString *)host
                   port:(uint16_t)port
-            completion:(DidOpened_Printer_Block)completion;
+            completion:(nullable DidOpened_Printer_Block)completion;
 
 
 /**
@@ -220,7 +220,7 @@ typedef void (^JCSDKCACHE_STATE)        (JCSDKCacheStatus status)       ;
  
  @return 当前连接的打印机名称。如果没有连接打印机，则返回 nil。
  */
-+ (NSString *)connectingPrinterName;
++ (nullable NSString *)connectingPrinterName;
 
 /**
  获取当前的蓝牙/Wi-Fi连接状态。
@@ -244,7 +244,7 @@ typedef void (^JCSDKCACHE_STATE)        (JCSDKCacheStatus status)       ;
  }
  @return  是否支持监听打印机状态变化：YES:支持、NO:不支持
  */
-+ (BOOL)getPrintStatusChange:(PRINT_DIC_INFO)completion;
++ (BOOL)getPrintStatusChange:(nullable PRINT_DIC_INFO)completion;
 
 
 /**
@@ -262,7 +262,7 @@ typedef void (^JCSDKCACHE_STATE)        (JCSDKCacheStatus status)       ;
             @"tailLengthPixel":arrs[8],//尾巴长度(单位像素)
             @"tailLength":arrs[9]}} //尾巴长度(单位毫米)
  */
-+ (void)getPaperInfo:(PRINT_DIC_INFO)completion;
++ (void)getPaperInfo:(nullable PRINT_DIC_INFO)completion;
 
 /**
  影响缓存和暂停功能，缓存最多5个任务，用以提高打印的连续型，提高打印体验
@@ -282,7 +282,7 @@ typedef void (^JCSDKCACHE_STATE)        (JCSDKCacheStatus status)       ;
  
  @param   completion      打印结束回调（在发生异常后不会返回）
  */
-+ (void)cancelJob:(DidPrinted_Block)completion;
++ (void)cancelJob:(;
 
 /**
  蓝牙/Wi-Fi打印完成(打印完成后调用)。
@@ -303,7 +303,7 @@ typedef void (^JCSDKCACHE_STATE)        (JCSDKCacheStatus status)       ;
     @"carbonUsed":@"碳带使用量，单位毫米"  //非必带
  }
  */
-+ (void)getPrintingCountInfo:(PRINT_DIC_INFO)count;
++ (void)getPrintingCountInfo:(nullable PRINT_DIC_INFO)count;
 
 /**
  蓝牙/Wi-Fi异常接收(连接成功后调用)。
@@ -350,7 +350,7 @@ typedef void (^JCSDKCACHE_STATE)        (JCSDKCacheStatus status)       ;
  50-非法标签
  51-非法碳带和标签
  */
-+ (void)getPrintingErrorInfo:(PRINT_INFO)error;
++ (void)getPrintingErrorInfo:(nullable PRINT_INFO)error;
 
 /**
 像素转毫米(会对像素进行处理)。
@@ -432,7 +432,7 @@ typedef void (^JCSDKCACHE_STATE)        (JCSDKCacheStatus status)       ;
  */
 + (void)startJob:(int)blackRules
   withPaperStyle:(int)paperStyle
-  withCompletion:(DidPrinted_Block)completion;
+  withCompletion:(nullable DidPrinted_Block)completion;
 
 /**
  打印二值化后的图片 bitmap 数据。
@@ -681,7 +681,7 @@ withTextAlignVertical:(int)textAlignVertical
                  withY:(float)y
              withWidth:(float)w
             withHeight:(float)h
-            withString:(NSString *)text
+            withString:(nonnull NSString *)text
             withRotate:(int)rotate
           withCodeType:(int)codeType;
 
@@ -709,7 +709,7 @@ withTextAlignVertical:(int)textAlignVertical
           withHeight:(float)h
           withRotate:(int)rotate
         withLineType:(int)lineType
-       withDashWidth:(NSArray <NSNumber *>*)dashWidth;
+       withDashWidth:(nullable NSArray <NSNumber *>*)dashWidth;
 
 
 /**
@@ -741,7 +741,7 @@ withTextAlignVertical:(int)textAlignVertical
            withRotate:(int)rotate
         withGraphType:(int)graphType
          withLineType:(int)lineType
-        withDashWidth:(NSArray <NSNumber *>*)dashWidth;
+        withDashWidth:(nullable NSArray <NSNumber *>*)dashWidth;
 
 
 /**
@@ -764,7 +764,7 @@ withTextAlignVertical:(int)textAlignVertical
                 withY:(float)y
             withWidth:(float)w
            withHeight:(float)h
-        withImageData:(NSString *)imageData
+        withImageData:(nonnull NSString *)imageData
            withRotate:(int)rotate
 withImageProcessingType:(int)imageProcessingType
 withImageProcessingValue:(float)imageProcessingValue;
@@ -802,9 +802,9 @@ withImageProcessingValue:(float)imageProcessingValue;
  @param completion 打印完成回调，用于处理打印任务是否成功的结果。
 
  */
-+ (void)commit:(NSString *)printData
++ (void)commit:(nonnull NSString *)printData
 withOnePageNumbers:(int)onePageNumbers
-  withComplete:(DidPrinted_Block)completion;
+  withComplete:(nullable DidPrinted_Block)completion;
 
 /**
  开始打印标签任务。
@@ -816,10 +816,10 @@ withOnePageNumbers:(int)onePageNumbers
  @param epcCode 要写入的RFID数据。可以为nil，表示不写入RFID数据。（仅支持B32R机型）
  @param completion 打印完成回调，用于处理打印任务是否成功的结果。
  */
-+ (void)commit:(NSString *)printData
++ (void)commit:(nonnull NSString *)printData
 withOnePageNumbers:(int)onePageNumbers
        withEpc:(nullable NSString *)epcCode
-  withComplete:(DidPrinted_Block)completion;
+  withComplete:(nullable DidPrinted_Block)completion;
 
 @end
 
