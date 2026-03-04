@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="21754" systemVersion="22F82" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <!-- IngredientEntity -->
+    <entity name="IngredientEntity" representedClassName="IngredientEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" attributeType="String" minValueString="1" maxValueString="100"/>
+        <attribute name="category" attributeType="String"/>
+        <attribute name="quantity" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="unit" attributeType="String" minValueString="1" maxValueString="20"/>
+        <attribute name="expirationDate" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="barcode" optional="YES" attributeType="String"/>
+        <attribute name="qrCode" optional="YES" attributeType="String"/>
+        <attribute name="minimumStockThreshold" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="notes" optional="YES" attributeType="String"/>
+        <attribute name="createdAt" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="updatedAt" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="storageLocation" maxCount="1" deletionRule="Nullify" destinationEntity="StorageLocationEntity" inverseName="ingredients" inverseEntity="StorageLocationEntity"/>
+        <relationship name="supplier" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="SupplierEntity" inverseName="ingredients" inverseEntity="SupplierEntity"/>
+        <relationship name="purchaseRecords" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PurchaseRecordEntity" inverseName="ingredient" inverseEntity="PurchaseRecordEntity"/>
+        <uniquenessConstraints>
+            <uniquenessConstraint>
+                <constraint value="id"/>
+            </uniquenessConstraint>
+        </uniquenessConstraints>
+    </entity>
+    
+    <!-- StorageLocationEntity -->
+    <entity name="StorageLocationEntity" representedClassName="StorageLocationEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" attributeType="String" minValueString="1" maxValueString="100"/>
+        <attribute name="type" attributeType="String"/>
+        <attribute name="temperature" optional="YES" attributeType="Double" usesScalarValueType="YES"/>
+        <attribute name="isCustom" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <relationship name="ingredients" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="IngredientEntity" inverseName="storageLocation" inverseEntity="IngredientEntity"/>
+        <uniquenessConstraints>
+            <uniquenessConstraint>
+                <constraint value="id"/>
+            </uniquenessConstraint>
+        </uniquenessConstraints>
+    </entity>
+    
+    <!-- SupplierEntity -->
+    <entity name="SupplierEntity" representedClassName="SupplierEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" attributeType="String" minValueString="1" maxValueString="100"/>
+        <attribute name="contactPerson" optional="YES" attributeType="String"/>
+        <attribute name="phone" optional="YES" attributeType="String"/>
+        <attribute name="email" optional="YES" attributeType="String"/>
+        <attribute name="address" optional="YES" attributeType="String"/>
+        <attribute name="notes" optional="YES" attributeType="String"/>
+        <relationship name="ingredients" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="IngredientEntity" inverseName="supplier" inverseEntity="IngredientEntity"/>
+        <relationship name="purchaseRecords" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PurchaseRecordEntity" inverseName="supplier" inverseEntity="PurchaseRecordEntity"/>
+        <uniquenessConstraints>
+            <uniquenessConstraint>
+                <constraint value="id"/>
+            </uniquenessConstraint>
+        </uniquenessConstraints>
+    </entity>
+    
+    <!-- PurchaseRecordEntity -->
+    <entity name="PurchaseRecordEntity" representedClassName="PurchaseRecordEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="quantity" attributeType="Double" minValueString="0" usesScalarValueType="YES"/>
+        <attribute name="unitCost" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="totalCost" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="purchaseDate" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="notes" optional="YES" attributeType="String"/>
+        <relationship name="ingredient" maxCount="1" deletionRule="Nullify" destinationEntity="IngredientEntity" inverseName="purchaseRecords" inverseEntity="IngredientEntity"/>
+        <relationship name="supplier" maxCount="1" deletionRule="Nullify" destinationEntity="SupplierEntity" inverseName="purchaseRecords" inverseEntity="SupplierEntity"/>
+        <uniquenessConstraints>
+            <uniquenessConstraint>
+                <constraint value="id"/>
+            </uniquenessConstraint>
+        </uniquenessConstraints>
+    </entity>
+</model>

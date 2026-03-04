@@ -1,0 +1,210 @@
+/* 
+  Localizable.strings
+  RestaurantIngredientManager
+
+  Created on 2024.
+  中文本地化字符串
+*/
+
+// MARK: - Common
+"common.ok" = "确定";
+"common.cancel" = "取消";
+"common.save" = "保存";
+"common.delete" = "删除";
+"common.edit" = "编辑";
+"common.add" = "添加";
+"common.done" = "完成";
+"common.loading" = "加载中...";
+"common.error" = "错误";
+"common.success" = "成功";
+"common.search" = "搜索";
+"common.filter" = "筛选";
+"common.refresh" = "刷新";
+
+// MARK: - Tab Bar
+"tab.ingredients" = "食材";
+"tab.scanner" = "扫描";
+"tab.printer" = "打印";
+"tab.purchase" = "采购";
+"tab.settings" = "设置";
+
+// MARK: - Ingredients
+"ingredients.title" = "食材管理";
+"ingredients.add" = "添加食材";
+"ingredients.edit" = "编辑食材";
+"ingredients.detail" = "食材详情";
+"ingredients.empty" = "没有食材";
+"ingredients.empty.description" = "点击右上角 + 添加食材";
+"ingredients.search.placeholder" = "搜索食材名称或条形码";
+"ingredients.expiring" = "即将过期";
+"ingredients.lowStock" = "库存不足";
+"ingredients.delete.confirm" = "确定要删除这个食材吗？";
+
+// MARK: - Ingredient Fields
+"ingredient.name" = "食材名称";
+"ingredient.category" = "类别";
+"ingredient.quantity" = "当前数量";
+"ingredient.unit" = "单位";
+"ingredient.minimumStock" = "最小库存";
+"ingredient.expiryDate" = "保质期";
+"ingredient.supplier" = "供应商";
+"ingredient.location" = "存储位置";
+"ingredient.barcode" = "条形码";
+"ingredient.notes" = "备注";
+
+// MARK: - Categories
+"category.vegetables" = "蔬菜";
+"category.fruits" = "水果";
+"category.meat" = "肉类";
+"category.seafood" = "海鲜";
+"category.dairy" = "乳制品";
+"category.grains" = "谷物";
+"category.condiments" = "调味品";
+"category.beverages" = "饮料";
+"category.frozen" = "冷冻食品";
+"category.other" = "其他";
+
+// MARK: - Scanner
+"scanner.title" = "扫描";
+"scanner.prompt" = "将条形码或二维码对准扫描框";
+"scanner.found" = "找到食材: %@";
+"scanner.notFound" = "未找到匹配的食材";
+"scanner.permission.title" = "需要相机权限";
+"scanner.permission.message" = "扫描条形码和二维码需要访问相机";
+"scanner.permission.request" = "请求权限";
+"scanner.permission.settings" = "前往设置";
+"scanner.viewDetail" = "查看详情";
+"scanner.continue" = "继续扫描";
+
+// MARK: - Printer
+"printer.title" = "打印机";
+"printer.connection" = "打印机连接";
+"printer.status" = "打印机状态";
+"printer.scan" = "扫描打印机";
+"printer.connect" = "连接";
+"printer.disconnect" = "断开连接";
+"printer.connected" = "已连接";
+"printer.notConnected" = "未连接";
+"printer.empty" = "未找到打印机";
+"printer.empty.description" = "点击下方按钮扫描打印机";
+"printer.scanning" = "扫描中...";
+"printer.bluetooth" = "蓝牙";
+"printer.wifi" = "WiFi";
+"printer.found" = "找到 %d 台打印机";
+
+// MARK: - Printer Status
+"printer.status.cover" = "盖子";
+"printer.status.paper" = "纸张";
+"printer.status.battery" = "电量";
+"printer.status.connection" = "连接";
+"printer.status.cover.open" = "打开";
+"printer.status.cover.closed" = "已关闭";
+"printer.status.paper.normal" = "正常";
+"printer.status.paper.low" = "纸张不足";
+"printer.status.paper.out" = "缺纸";
+"printer.status.warnings" = "警告";
+"printer.status.refresh" = "刷新状态";
+
+// MARK: - Label Print
+"label.print" = "打印标签";
+"label.template" = "标签模板";
+"label.copies" = "打印份数";
+"label.print.start" = "开始打印";
+"label.printing" = "打印中...";
+"label.print.success" = "打印成功";
+"label.print.failed" = "打印失败";
+"label.default" = "默认模板";
+
+// MARK: - Purchase
+"purchase.title" = "采购记录";
+"purchase.add" = "添加采购记录";
+"purchase.empty" = "没有采购记录";
+"purchase.empty.description" = "点击右上角 + 添加采购记录";
+"purchase.totalCost" = "总成本";
+"purchase.analysis" = "分析";
+"purchase.quantity" = "数量";
+"purchase.unitPrice" = "单价";
+"purchase.totalPrice" = "总价";
+"purchase.date" = "采购日期";
+"purchase.export" = "导出CSV";
+
+// MARK: - Cost Analysis
+"cost.analysis" = "成本分析";
+"cost.byCategory" = "按类别统计";
+"cost.bySupplier" = "按供应商统计";
+"cost.total" = "总成本";
+
+// MARK: - Supplier
+"supplier.title" = "供应商";
+"supplier.add" = "添加供应商";
+"supplier.edit" = "编辑供应商";
+"supplier.empty" = "没有供应商";
+"supplier.empty.description" = "点击右上角 + 添加供应商";
+"supplier.name" = "供应商名称";
+"supplier.contact" = "联系人";
+"supplier.phone" = "电话";
+"supplier.email" = "邮箱";
+"supplier.address" = "地址";
+"supplier.ingredients" = "%d 个食材";
+
+// MARK: - Storage Location
+"location.title" = "存储位置";
+"location.add" = "添加存储位置";
+"location.edit" = "编辑存储位置";
+"location.empty" = "没有存储位置";
+"location.empty.description" = "点击右上角 + 添加存储位置";
+"location.name" = "位置名称";
+"location.area" = "区域";
+"location.temperature" = "温度";
+"location.humidity" = "湿度";
+"location.setTemperature" = "设置温度";
+"location.setHumidity" = "设置湿度";
+
+// MARK: - Settings
+"settings.title" = "设置";
+"settings.language" = "语言";
+"settings.language.select" = "选择语言";
+"settings.language.chinese" = "简体中文";
+"settings.language.english" = "English";
+"settings.notifications" = "通知";
+"settings.expiryWarning" = "保质期警告: %d 天";
+"settings.expiryWarning.description" = "当食材在 %d 天内过期时显示警告";
+"settings.dataManagement" = "数据管理";
+"settings.suppliers" = "供应商管理";
+"settings.locations" = "存储位置管理";
+"settings.about" = "关于";
+"settings.version" = "版本";
+
+// MARK: - About
+"about.title" = "关于";
+"about.appName" = "餐厅食材管理系统";
+"about.features" = "功能特性";
+"about.feature.inventory" = "食材库存管理";
+"about.feature.scanner" = "条形码扫描";
+"about.feature.printer" = "标签打印";
+"about.feature.purchase" = "采购记录";
+"about.feature.analysis" = "成本分析";
+
+// MARK: - Validation
+"validation.required" = "%@ 不能为空";
+"validation.tooLong" = "%@ 不能超过 %d 个字符";
+"validation.negative" = "%@ 不能为负数";
+"validation.invalid" = "无效的 %@";
+
+// MARK: - Errors
+"error.loadFailed" = "加载失败: %@";
+"error.saveFailed" = "保存失败: %@";
+"error.deleteFailed" = "删除失败: %@";
+"error.scanFailed" = "扫描失败: %@";
+"error.printFailed" = "打印失败: %@";
+"error.connectionFailed" = "连接失败: %@";
+"error.permissionDenied" = "权限被拒绝";
+"error.notConnected" = "未连接打印机";
+"error.hasAssociations" = "该项有关联数据，无法删除";
+
+// MARK: - Success Messages
+"success.saved" = "保存成功";
+"success.deleted" = "删除成功";
+"success.connected" = "已连接到 %@";
+"success.printed" = "打印成功";
+"success.exported" = "导出成功";

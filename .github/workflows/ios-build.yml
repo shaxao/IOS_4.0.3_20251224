@@ -1,0 +1,52 @@
+name: iOS Build
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+        
+    - name: Install dependencies
+      run: |
+        cd RestaurantIngredientManager
+        # 如果使用 CocoaPods
+        # pod install
+        
+    - name: Build project
+      run: |
+        cd RestaurantIngredientManager
+        xcodebuild -project RestaurantIngredientManager.xcodeproj \
+          -scheme RestaurantIngredientManager \
+          -sdk iphoneos \
+          -configuration Release \
+          -archivePath $PWD/build/RestaurantIngredientManager.xcarchive \
+          archive
+          
+    - name: Export IPA
+      run: |
+        cd RestaurantIngredientManager
+        xcodebuild -exportArchive \
+          -archivePath $PWD/build/RestaurantIngredientManager.xcarchive \
+          -exportOptionsPlist ExportOptions.plist \
+          -exportPath $PWD/build
+          
+    - name: Upload IPA
+      uses: actions/upload-artifact@v3
+      with:
+        name: RestaurantIngredientManager-IPA
+        path: RestaurantIngredientManager/build/*.ipa
+        retention-days: 30

@@ -1,0 +1,210 @@
+/* 
+  Localizable.strings
+  RestaurantIngredientManager
+
+  Created on 2024.
+  English Localization
+*/
+
+// MARK: - Common
+"common.ok" = "OK";
+"common.cancel" = "Cancel";
+"common.save" = "Save";
+"common.delete" = "Delete";
+"common.edit" = "Edit";
+"common.add" = "Add";
+"common.done" = "Done";
+"common.loading" = "Loading...";
+"common.error" = "Error";
+"common.success" = "Success";
+"common.search" = "Search";
+"common.filter" = "Filter";
+"common.refresh" = "Refresh";
+
+// MARK: - Tab Bar
+"tab.ingredients" = "Ingredients";
+"tab.scanner" = "Scanner";
+"tab.printer" = "Printer";
+"tab.purchase" = "Purchase";
+"tab.settings" = "Settings";
+
+// MARK: - Ingredients
+"ingredients.title" = "Ingredients";
+"ingredients.add" = "Add Ingredient";
+"ingredients.edit" = "Edit Ingredient";
+"ingredients.detail" = "Ingredient Detail";
+"ingredients.empty" = "No Ingredients";
+"ingredients.empty.description" = "Tap + to add an ingredient";
+"ingredients.search.placeholder" = "Search name or barcode";
+"ingredients.expiring" = "Expiring Soon";
+"ingredients.lowStock" = "Low Stock";
+"ingredients.delete.confirm" = "Delete this ingredient?";
+
+// MARK: - Ingredient Fields
+"ingredient.name" = "Name";
+"ingredient.category" = "Category";
+"ingredient.quantity" = "Current Quantity";
+"ingredient.unit" = "Unit";
+"ingredient.minimumStock" = "Minimum Stock";
+"ingredient.expiryDate" = "Expiry Date";
+"ingredient.supplier" = "Supplier";
+"ingredient.location" = "Storage Location";
+"ingredient.barcode" = "Barcode";
+"ingredient.notes" = "Notes";
+
+// MARK: - Categories
+"category.vegetables" = "Vegetables";
+"category.fruits" = "Fruits";
+"category.meat" = "Meat";
+"category.seafood" = "Seafood";
+"category.dairy" = "Dairy";
+"category.grains" = "Grains";
+"category.condiments" = "Condiments";
+"category.beverages" = "Beverages";
+"category.frozen" = "Frozen";
+"category.other" = "Other";
+
+// MARK: - Scanner
+"scanner.title" = "Scanner";
+"scanner.prompt" = "Align barcode or QR code";
+"scanner.found" = "Found: %@";
+"scanner.notFound" = "No matching ingredient";
+"scanner.permission.title" = "Camera Permission Required";
+"scanner.permission.message" = "Camera access is needed to scan codes";
+"scanner.permission.request" = "Request Permission";
+"scanner.permission.settings" = "Open Settings";
+"scanner.viewDetail" = "View Detail";
+"scanner.continue" = "Continue Scanning";
+
+// MARK: - Printer
+"printer.title" = "Printer";
+"printer.connection" = "Printer Connection";
+"printer.status" = "Printer Status";
+"printer.scan" = "Scan for Printers";
+"printer.connect" = "Connect";
+"printer.disconnect" = "Disconnect";
+"printer.connected" = "Connected";
+"printer.notConnected" = "Not Connected";
+"printer.empty" = "No Printers Found";
+"printer.empty.description" = "Tap button below to scan";
+"printer.scanning" = "Scanning...";
+"printer.bluetooth" = "Bluetooth";
+"printer.wifi" = "WiFi";
+"printer.found" = "Found %d printer(s)";
+
+// MARK: - Printer Status
+"printer.status.cover" = "Cover";
+"printer.status.paper" = "Paper";
+"printer.status.battery" = "Battery";
+"printer.status.connection" = "Connection";
+"printer.status.cover.open" = "Open";
+"printer.status.cover.closed" = "Closed";
+"printer.status.paper.normal" = "Normal";
+"printer.status.paper.low" = "Low";
+"printer.status.paper.out" = "Out";
+"printer.status.warnings" = "Warnings";
+"printer.status.refresh" = "Refresh Status";
+
+// MARK: - Label Print
+"label.print" = "Print Label";
+"label.template" = "Label Template";
+"label.copies" = "Copies";
+"label.print.start" = "Start Printing";
+"label.printing" = "Printing...";
+"label.print.success" = "Print Successful";
+"label.print.failed" = "Print Failed";
+"label.default" = "Default Template";
+
+// MARK: - Purchase
+"purchase.title" = "Purchase Records";
+"purchase.add" = "Add Purchase Record";
+"purchase.empty" = "No Purchase Records";
+"purchase.empty.description" = "Tap + to add a record";
+"purchase.totalCost" = "Total Cost";
+"purchase.analysis" = "Analysis";
+"purchase.quantity" = "Quantity";
+"purchase.unitPrice" = "Unit Price";
+"purchase.totalPrice" = "Total Price";
+"purchase.date" = "Purchase Date";
+"purchase.export" = "Export CSV";
+
+// MARK: - Cost Analysis
+"cost.analysis" = "Cost Analysis";
+"cost.byCategory" = "By Category";
+"cost.bySupplier" = "By Supplier";
+"cost.total" = "Total Cost";
+
+// MARK: - Supplier
+"supplier.title" = "Suppliers";
+"supplier.add" = "Add Supplier";
+"supplier.edit" = "Edit Supplier";
+"supplier.empty" = "No Suppliers";
+"supplier.empty.description" = "Tap + to add a supplier";
+"supplier.name" = "Supplier Name";
+"supplier.contact" = "Contact Person";
+"supplier.phone" = "Phone";
+"supplier.email" = "Email";
+"supplier.address" = "Address";
+"supplier.ingredients" = "%d ingredient(s)";
+
+// MARK: - Storage Location
+"location.title" = "Storage Locations";
+"location.add" = "Add Location";
+"location.edit" = "Edit Location";
+"location.empty" = "No Storage Locations";
+"location.empty.description" = "Tap + to add a location";
+"location.name" = "Location Name";
+"location.area" = "Area";
+"location.temperature" = "Temperature";
+"location.humidity" = "Humidity";
+"location.setTemperature" = "Set Temperature";
+"location.setHumidity" = "Set Humidity";
+
+// MARK: - Settings
+"settings.title" = "Settings";
+"settings.language" = "Language";
+"settings.language.select" = "Select Language";
+"settings.language.chinese" = "简体中文";
+"settings.language.english" = "English";
+"settings.notifications" = "Notifications";
+"settings.expiryWarning" = "Expiry Warning: %d days";
+"settings.expiryWarning.description" = "Show warning when expiring within %d days";
+"settings.dataManagement" = "Data Management";
+"settings.suppliers" = "Manage Suppliers";
+"settings.locations" = "Manage Locations";
+"settings.about" = "About";
+"settings.version" = "Version";
+
+// MARK: - About
+"about.title" = "About";
+"about.appName" = "Restaurant Ingredient Manager";
+"about.features" = "Features";
+"about.feature.inventory" = "Inventory Management";
+"about.feature.scanner" = "Barcode Scanner";
+"about.feature.printer" = "Label Printing";
+"about.feature.purchase" = "Purchase Records";
+"about.feature.analysis" = "Cost Analysis";
+
+// MARK: - Validation
+"validation.required" = "%@ is required";
+"validation.tooLong" = "%@ cannot exceed %d characters";
+"validation.negative" = "%@ cannot be negative";
+"validation.invalid" = "Invalid %@";
+
+// MARK: - Errors
+"error.loadFailed" = "Load failed: %@";
+"error.saveFailed" = "Save failed: %@";
+"error.deleteFailed" = "Delete failed: %@";
+"error.scanFailed" = "Scan failed: %@";
+"error.printFailed" = "Print failed: %@";
+"error.connectionFailed" = "Connection failed: %@";
+"error.permissionDenied" = "Permission denied";
+"error.notConnected" = "Printer not connected";
+"error.hasAssociations" = "Cannot delete: has associated data";
+
+// MARK: - Success Messages
+"success.saved" = "Saved successfully";
+"success.deleted" = "Deleted successfully";
+"success.connected" = "Connected to %@";
+"success.printed" = "Printed successfully";
+"success.exported" = "Exported successfully";
