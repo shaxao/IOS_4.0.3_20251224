@@ -11,33 +11,33 @@ import SwiftUI
 /// 食材详情视图
 struct IngredientDetailView: View {
     let ingredient: Ingredient
-    @StateObject private var viewModel: IngredientDetailViewModel
+    @ObservedObject private var viewModel: IngredientDetailViewModel
     @State private var showingEditSheet = false
     @State private var showingPrintSheet = false
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.presentationMode) private var presentationMode
     
     init(ingredient: Ingredient) {
         self.ingredient = ingredient
-        _viewModel = StateObject(wrappedValue: IngredientDetailViewModel(ingredient: ingredient))
+        _viewModel = ObservedObject(wrappedValue: IngredientDetailViewModel(ingredient: ingredient))
     }
     
     var body: some View {
         List {
             // 基本信息
-            Section("基本信息") {
+            Section(header: Text("基本信息")) {
                 DetailRow(label: "名称", value: viewModel.name)
                 DetailRow(label: "类别", value: viewModel.category.rawValue)
-                DetailRow(label: "当前数量", value: "\(viewModel.quantity.formatted()) \(viewModel.unit)")
-                DetailRow(label: "最小库存", value: "\(viewModel.minimumStockThreshold.formatted()) \(viewModel.unit)")
+                DetailRow(label: "当前数量", value: "\(formattedNumber(viewModel.quantity)) \(viewModel.unit)")
+                DetailRow(label: "最小库存", value: "\(formattedNumber(viewModel.minimumStockThreshold)) \(viewModel.unit)")
             }
             
             // 日期信息
-            Section("日期信息") {
+            Section(header: Text("日期信息")) {
                 if let expiryDate = viewModel.expirationDate {
                     HStack {
                         Text("保质期")
                         Spacer()
-                        Text(expiryDate, style: .date)
+                        Text(formattedDate(expiryDate))
                             .foregroundColor(ingredient.isExpiringSoon(within: 3) ? .orange : .primary)
                         if ingredient.isExpiringSoon(within: 3) {
                             Image(systemName: "exclamationmark.triangle.fill")
@@ -51,7 +51,7 @@ struct IngredientDetailView: View {
             
             // 条形码
             if let barcode = viewModel.barcode {
-                Section("条形码") {
+                Section(header: Text("条形码")) {
                     Text(barcode)
                         .font(.system(.body, design: .monospaced))
                 }
@@ -59,36 +59,37 @@ struct IngredientDetailView: View {
             
             // 备注
             if let notes = viewModel.notes, !notes.isEmpty {
-                Section("备注") {
+                Section(header: Text("备注")) {
                     Text(notes)
                         .foregroundColor(.secondary)
                 }
             }
             
             // 操作按钮
-            Section {
+            Section(header: Text("")) {
                 Button {
                     showingPrintSheet = true
                 } label: {
-                    Label("打印标签", systemImage: "printer")
+                    HStack {
+                        Image(systemName: "printer")
+                        Text("打印标签")
+                    }
                 }
                 
                 Button {
                     showingEditSheet = true
                 } label: {
-                    Label("编辑", systemImage: "pencil")
+                    HStack {
+                        Image(systemName: "pencil")
+                        Text("编辑")
+                    }
                 }
             }
         }
-        .navigationTitle("食材详情")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button("完成") {
-                    dismiss()
-                }
-            }
-        }
+        .navigationBarTitle("食材详情", displayMode: .inline)
+        .navigationBarItems(trailing: Button("完成") {
+            presentationMode.wrappedValue.dismiss()
+        })
         .sheet(isPresented: $showingEditSheet) {
             NavigationView {
                 IngredientFormView(mode: .edit(ingredient))
@@ -99,16 +100,34 @@ struct IngredientDetailView: View {
                 LabelPrintView(ingredient: ingredient)
             }
         }
-        .alert("错误", isPresented: .constant(viewModel.errorMessage != nil)) {
-            Button("确定") {
-                viewModel.errorMessage = nil
-            }
-        } message: {
-            if let error = viewModel.errorMessage {
-                Text(error)
-            }
+        .alert(isPresented: Binding(
+            get: { viewModel.errorMessage != nil },
+            set: { if !$0 { viewModel.errorMessage = nil } }
+        )) {
+            Alert(
+                title: Text("错误"),
+                message: Text(viewModel.errorMessage ?? ""),
+                dismissButton: .default(Text("确定")) {
+                    viewModel.errorMessage = nil
+                }
+            )
         }
     }
+    
+    private func formattedNumber(_ value: Double) -> String {
+        String(format: "%.2f", value)
+    }
+    
+    private func formattedDate(_ date: Date) -> String {
+        Self.dateFormatter.string(from: date)
+    }
+    
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter
+    }()
 }
 
 // MARK: - Detail Row
@@ -136,8 +155,8 @@ struct DetailRow: View {
             unit: "kg",
             expirationDate: Date().addingTimeInterval(86400 * 2),
             storageLocation: StorageLocation(name: "冷藏区", type: .refrigerator),
-            minimumStockThreshold: 2,
             barcode: "1234567890",
+            minimumStockThreshold: 2,
             notes: "新鲜鸡胸肉"
         ))
     }

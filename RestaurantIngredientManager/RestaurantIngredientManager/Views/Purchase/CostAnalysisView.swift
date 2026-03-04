@@ -14,6 +14,14 @@ struct CostAnalysisView: View {
     @Environment(\.presentationMode) private var presentationMode
     @State private var showingExportSheet = false
     
+    private var sortedCategories: [Category] {
+        viewModel.costByCategory.keys.sorted { $0.rawValue < $1.rawValue }
+    }
+    
+    private var supplierIds: [UUID] {
+        Array(viewModel.costBySupplier.keys)
+    }
+    
     var body: some View {
         List {
             // 总成本
@@ -35,8 +43,8 @@ struct CostAnalysisView: View {
             
             // 按类别统计
             if !viewModel.costByCategory.isEmpty {
-                Section("按类别统计") {
-                    ForEach(Array(viewModel.costByCategory.keys.sorted(by: { $0.rawValue < $1.rawValue })), id: \.self) { category in
+                Section(header: Text("按类别统计")) {
+                    ForEach(sortedCategories, id: \.self) { category in
                         if let cost = viewModel.costByCategory[category] {
                             HStack {
                                 Label(category.rawValue, systemImage: category.icon)
@@ -62,8 +70,8 @@ struct CostAnalysisView: View {
             
             // 按供应商统计
             if !viewModel.costBySupplier.isEmpty {
-                Section("按供应商统计") {
-                    ForEach(Array(viewModel.costBySupplier.keys), id: \.self) { supplierID in
+                Section(header: Text("按供应商统计")) {
+                    ForEach(supplierIds, id: \.self) { supplierID in
                         if let cost = viewModel.costBySupplier[supplierID] {
                             HStack {
                                 Text("供应商")

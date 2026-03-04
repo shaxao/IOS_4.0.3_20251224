@@ -3,7 +3,7 @@ name: RestaurantIngredientManager
 options:
   bundleIdPrefix: com.restaurant
   deploymentTarget:
-    iOS: "13.0"
+    iOS: "15.0"
   developmentLanguage: zh-Hans
 
 settings:
@@ -11,7 +11,7 @@ settings:
     PRODUCT_NAME: RestaurantIngredientManager
     PRODUCT_BUNDLE_IDENTIFIER: com.restaurant.ingredientmanager
     SWIFT_VERSION: "5.0"
-    IPHONEOS_DEPLOYMENT_TARGET: "13.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "15.0"
     TARGETED_DEVICE_FAMILY: "1,2"
     INFOPLIST_FILE: RestaurantIngredientManager/Info.plist
     SWIFT_OBJC_BRIDGING_HEADER: RestaurantIngredientManager/RestaurantIngredientManager-Bridging-Header.h

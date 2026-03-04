@@ -89,14 +89,14 @@ struct ErrorAlert: ViewModifier {
     
     func body(content: Content) -> some View {
         content
-            .alert(NSLocalizedString("common.error", comment: ""), isPresented: $errorHandler.showError) {
-                Button(NSLocalizedString("common.ok", comment: "")) {
-                    errorHandler.clearError()
-                }
-            } message: {
-                if let error = errorHandler.currentError {
-                    Text(error.localizedDescription)
-                }
+            .alert(isPresented: $errorHandler.showError) {
+                Alert(
+                    title: Text(NSLocalizedString("common.error", comment: "")),
+                    message: Text(errorHandler.currentError?.localizedDescription ?? ""),
+                    dismissButton: .default(Text(NSLocalizedString("common.ok", comment: ""))) {
+                        errorHandler.clearError()
+                    }
+                )
             }
     }
 }
