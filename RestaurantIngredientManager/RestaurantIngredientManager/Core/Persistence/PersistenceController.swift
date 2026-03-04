@@ -175,20 +175,21 @@ class PersistenceController: ObservableObject {
     func performBackgroundTaskAsync<T>(_ block: @escaping (NSManagedObjectContext) async throws -> T) async throws -> T {
         let context = newBackgroundContext()
         
-        return try await context.perform {
-            do {
-                let result = try await block(context)
-                
-                // 如果上下文有更改，保存它
-                if context.hasChanges {
-                    try context.save()
-                    print("✅ 后台上下文保存成功")
+        return try await withCheckedThrowingContinuation { continuation in
+            context.perform {
+                Task {
+                    do {
+                        let result = try await block(context)
+                        if context.hasChanges {
+                            try context.save()
+                            print("✅ 后台上下文保存成功")
+                        }
+                        continuation.resume(returning: result)
+                    } catch {
+                        print("❌ 后台操作失败: \(error.localizedDescription)")
+                        continuation.resume(throwing: PersistenceError.saveFailed(error))
+                    }
                 }
-                
-                return result
-            } catch {
-                print("❌ 后台操作失败: \(error.localizedDescription)")
-                throw PersistenceError.saveFailed(error)
             }
         }
     }
@@ -231,7 +232,8 @@ class PersistenceController: ObservableObject {
                 throw PersistenceError.saveFailed(error)
             }
         }
-        
-        try save()
+        if container.viewContext.hasChanges {
+            try container.viewContext.save()
+        }
     }
 }

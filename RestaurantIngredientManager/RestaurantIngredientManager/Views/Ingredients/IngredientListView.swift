@@ -105,10 +105,10 @@ struct IngredientListView: View {
             // 食材列表
             Section {
                 if viewModel.filteredIngredients.isEmpty {
-                    ContentUnavailableView(
-                        "没有食材",
+                    EmptyStateView(
+                        title: "没有食材",
                         systemImage: "tray",
-                        description: Text("点击右上角 + 添加食材")
+                        message: "点击右上角 + 添加食材"
                     )
                 } else {
                     ForEach(viewModel.filteredIngredients) { ingredient in
@@ -255,11 +255,10 @@ extension Category {
     var icon: String {
         switch self {
         case .vegetables: return "leaf.fill"
-        case .fruits: return "apple.logo"
         case .meat: return "fork.knife"
         case .seafood: return "fish.fill"
         case .dairy: return "drop.fill"
-        case .grains: return "circle.grid.3x3.fill"
+        case .dryGoods: return "circle.grid.2x2.fill"
         case .condiments: return "drop.triangle.fill"
         case .beverages: return "cup.and.saucer.fill"
         case .frozen: return "snowflake"
@@ -270,16 +269,36 @@ extension Category {
     var color: Color {
         switch self {
         case .vegetables: return .green
-        case .fruits: return .orange
         case .meat: return .red
         case .seafood: return .blue
         case .dairy: return .cyan
-        case .grains: return .brown
+        case .dryGoods: return .brown
         case .condiments: return .yellow
         case .beverages: return .purple
         case .frozen: return .indigo
         case .other: return .gray
         }
+    }
+}
+
+private struct EmptyStateView: View {
+    let title: String
+    let systemImage: String
+    let message: String
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.system(size: 40))
+                .foregroundColor(.secondary)
+            Text(title)
+                .font(.headline)
+            Text(message)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity, minHeight: 160)
+        .padding(.vertical, 16)
     }
 }
 

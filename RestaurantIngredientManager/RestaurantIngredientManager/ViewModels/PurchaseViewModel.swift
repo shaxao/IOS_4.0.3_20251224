@@ -182,7 +182,8 @@ class PurchaseViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            purchaseRecords = try await repository.fetchByDateRange(start: start, end: end)
+            let criteria = PurchaseRecordQueryCriteria(dateRange: start...end)
+            purchaseRecords = try await repository.query(by: criteria)
             applyFilters()
             await calculateCosts()
         } catch {

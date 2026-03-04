@@ -172,8 +172,8 @@ class IngredientDetailViewModel: ObservableObject {
                     notes: notes
                 )
                 
-                let created = try await repository.create(ingredient)
-                ingredientID = created.id
+                try await repository.create(ingredient)
+                ingredientID = ingredient.id
             }
             
             isSaving = false

@@ -48,11 +48,18 @@ struct PurchaseRecordView: View {
                 if viewModel.isLoading && viewModel.purchaseRecords.isEmpty {
                     ProgressView("加载中...")
                 } else if viewModel.filteredRecords.isEmpty {
-                    ContentUnavailableView(
-                        "没有采购记录",
-                        systemImage: "cart",
-                        description: Text("点击右上角 + 添加采购记录")
-                    )
+                    VStack(spacing: 12) {
+                        Image(systemName: "cart")
+                            .font(.system(size: 36))
+                            .foregroundColor(.secondary)
+                        Text("没有采购记录")
+                            .font(.headline)
+                        Text("点击右上角 + 添加采购记录")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 140)
+                    .padding(.vertical, 8)
                 } else {
                     ForEach(viewModel.filteredRecords) { record in
                         PurchaseRecordRow(record: record)
@@ -148,7 +155,7 @@ struct PurchaseRecordRow: View {
                 Text("·")
                     .foregroundColor(.secondary)
                 
-                Text("单价: ¥\(record.unitPrice, specifier: "%.2f")")
+                Text("单价: ¥\(record.unitCost, specifier: "%.2f")")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }

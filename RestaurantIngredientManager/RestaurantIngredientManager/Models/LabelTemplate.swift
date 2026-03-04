@@ -8,7 +8,7 @@
 import Foundation
 
 /// 标签模板模型
-struct LabelTemplate: Identifiable, Codable, Equatable {
+struct LabelTemplate: Identifiable, Codable, Equatable, Hashable {
     let id: UUID
     var name: String
     var width: Double  // 毫米
@@ -33,7 +33,7 @@ struct LabelTemplate: Identifiable, Codable, Equatable {
     }
     
     /// 标签元素
-    struct LabelElement: Codable, Equatable, Identifiable {
+    struct LabelElement: Codable, Equatable, Identifiable, Hashable {
         let id: UUID
         var type: ElementType
         var x: Double
@@ -64,7 +64,7 @@ struct LabelTemplate: Identifiable, Codable, Equatable {
         }
         
         /// 元素类型
-        enum ElementType: String, Codable, CaseIterable {
+        enum ElementType: String, Codable, CaseIterable, Hashable {
             case text
             case qrCode
             case barcode

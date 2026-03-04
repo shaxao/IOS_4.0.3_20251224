@@ -75,11 +75,18 @@ struct PrinterConnectionView: View {
                             .foregroundColor(.secondary)
                     }
                 } else if viewModel.availablePrinters.isEmpty {
-                    ContentUnavailableView(
-                        "未找到打印机",
-                        systemImage: "printer.slash",
-                        description: Text("点击下方按钮扫描打印机")
-                    )
+                    VStack(spacing: 12) {
+                        Image(systemName: "printer.slash")
+                            .font(.system(size: 36))
+                            .foregroundColor(.secondary)
+                        Text("未找到打印机")
+                            .font(.headline)
+                        Text("点击下方按钮扫描打印机")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 140)
+                    .padding(.vertical, 8)
                 } else {
                     ForEach(viewModel.availablePrinters) { printer in
                         PrinterRow(printer: printer) {

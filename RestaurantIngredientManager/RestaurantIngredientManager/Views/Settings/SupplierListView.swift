@@ -19,11 +19,18 @@ struct SupplierListView: View {
             if viewModel.isLoading && viewModel.suppliers.isEmpty {
                 ProgressView("加载中...")
             } else if viewModel.suppliers.isEmpty {
-                ContentUnavailableView(
-                    "没有供应商",
-                    systemImage: "building.2",
-                    description: Text("点击右上角 + 添加供应商")
-                )
+                VStack(spacing: 12) {
+                    Image(systemName: "building.2")
+                        .font(.system(size: 36))
+                        .foregroundColor(.secondary)
+                    Text("没有供应商")
+                        .font(.headline)
+                    Text("点击右上角 + 添加供应商")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, minHeight: 140)
+                .padding(.vertical, 8)
             } else {
                 ForEach(viewModel.suppliers) { supplier in
                     SupplierRow(supplier: supplier, viewModel: viewModel)

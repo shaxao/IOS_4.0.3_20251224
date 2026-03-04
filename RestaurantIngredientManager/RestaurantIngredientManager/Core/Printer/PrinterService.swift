@@ -271,9 +271,7 @@ class PrinterService: PrinterServiceProtocol {
         }
         
         // 生成打印JSON
-        guard let printJson = JCAPI.generateLableJson() else {
-            throw PrinterServiceError.printFailed("生成打印数据失败")
-        }
+        let printJson = JCAPI.generateLableJson()
         
         // 设置打印份数
         JCAPI.setTotalQuantityOfPrints(1)

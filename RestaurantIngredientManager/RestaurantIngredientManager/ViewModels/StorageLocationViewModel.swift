@@ -61,14 +61,9 @@ class StorageLocationViewModel: ObservableObject {
     }
     
     /// 创建存储位置
-    func createLocation(name: String, area: String, temperature: Double?, humidity: Double?, notes: String?) async -> Bool {
+    func createLocation(name: String, type: StorageLocation.LocationType, temperature: Double?) async -> Bool {
         guard !name.isEmpty else {
             errorMessage = "存储位置名称不能为空"
-            return false
-        }
-        
-        guard !area.isEmpty else {
-            errorMessage = "区域不能为空"
             return false
         }
         
@@ -78,10 +73,9 @@ class StorageLocationViewModel: ObservableObject {
         do {
             let location = StorageLocation(
                 name: name,
-                area: area,
+                type: type,
                 temperature: temperature,
-                humidity: humidity,
-                notes: notes
+                isCustom: type == .custom
             )
             
             _ = try await repository.create(location)
@@ -167,6 +161,6 @@ class StorageLocationViewModel: ObservableObject {
     
     /// 按区域分组位置
     private func groupLocationsByArea() {
-        locationsByArea = Dictionary(grouping: locations, by: { $0.area })
+        locationsByArea = Dictionary(grouping: locations, by: { $0.type.rawValue })
     }
 }

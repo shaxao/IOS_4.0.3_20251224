@@ -19,11 +19,18 @@ struct StorageLocationListView: View {
             if viewModel.isLoading && viewModel.locations.isEmpty {
                 ProgressView("加载中...")
             } else if viewModel.locations.isEmpty {
-                ContentUnavailableView(
-                    "没有存储位置",
-                    systemImage: "location",
-                    description: Text("点击右上角 + 添加存储位置")
-                )
+                VStack(spacing: 12) {
+                    Image(systemName: "location")
+                        .font(.system(size: 36))
+                        .foregroundColor(.secondary)
+                    Text("没有存储位置")
+                        .font(.headline)
+                    Text("点击右上角 + 添加存储位置")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, minHeight: 140)
+                .padding(.vertical, 8)
             } else {
                 ForEach(viewModel.getAllAreas(), id: \.self) { area in
                     Section(area) {
@@ -104,12 +111,6 @@ struct StorageLocationRow: View {
                         .foregroundColor(.secondary)
                 }
                 
-                if let humidity = location.humidity {
-                    Label("\(humidity, specifier: "%.0f")%", systemImage: "humidity")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                
                 if ingredientCount > 0 {
                     Label("\(ingredientCount) 个食材", systemImage: "list.bullet")
                         .font(.caption)
@@ -142,24 +143,18 @@ struct StorageLocationFormView: View {
     let mode: Mode
     @StateObject private var viewModel = StorageLocationViewModel()
     @State private var name = ""
-    @State private var area = ""
+    @State private var type: StorageLocation.LocationType = .refrigerator
     @State private var temperature: Double?
-    @State private var humidity: Double?
-    @State private var notes = ""
     @State private var hasTemperature = false
-    @State private var hasHumidity = false
     @Environment(\.dismiss) private var dismiss
     
     init(mode: Mode) {
         self.mode = mode
         if case .edit(let location) = mode {
             _name = State(initialValue: location.name)
-            _area = State(initialValue: location.area)
+            _type = State(initialValue: location.type)
             _temperature = State(initialValue: location.temperature)
-            _humidity = State(initialValue: location.humidity)
-            _notes = State(initialValue: location.notes ?? "")
             _hasTemperature = State(initialValue: location.temperature != nil)
-            _hasHumidity = State(initialValue: location.humidity != nil)
         }
     }
     
@@ -167,7 +162,11 @@ struct StorageLocationFormView: View {
         Form {
             Section("基本信息") {
                 TextField("位置名称", text: $name)
-                TextField("区域", text: $area)
+                Picker("类型", selection: $type) {
+                    ForEach(StorageLocation.LocationType.allCases, id: \.self) { item in
+                        Text(item.rawValue).tag(item)
+                    }
+                }
             }
             
             Section("环境参数") {
@@ -188,29 +187,6 @@ struct StorageLocationFormView: View {
                             .foregroundColor(.secondary)
                     }
                 }
-                
-                Toggle("设置湿度", isOn: $hasHumidity)
-                
-                if hasHumidity {
-                    HStack {
-                        Text("湿度")
-                        Spacer()
-                        TextField("", value: Binding(
-                            get: { humidity ?? 0 },
-                            set: { humidity = $0 }
-                        ), format: .number)
-                        .keyboardType(.decimalPad)
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 80)
-                        Text("%")
-                            .foregroundColor(.secondary)
-                    }
-                }
-            }
-            
-            Section("备注") {
-                TextEditor(text: $notes)
-                    .frame(minHeight: 100)
             }
         }
         .navigationTitle(mode.title)
@@ -227,17 +203,15 @@ struct StorageLocationFormView: View {
                     Task {
                         let success = await viewModel.createLocation(
                             name: name,
-                            area: area,
-                            temperature: hasTemperature ? temperature : nil,
-                            humidity: hasHumidity ? humidity : nil,
-                            notes: notes.isEmpty ? nil : notes
+                            type: type,
+                            temperature: hasTemperature ? temperature : nil
                         )
                         if success {
                             dismiss()
                         }
                     }
                 }
-                .disabled(name.isEmpty || area.isEmpty || viewModel.isSaving)
+                .disabled(name.isEmpty || viewModel.isSaving)
             }
         }
     }

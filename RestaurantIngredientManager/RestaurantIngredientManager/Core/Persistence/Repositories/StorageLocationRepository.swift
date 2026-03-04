@@ -24,6 +24,7 @@ protocol StorageLocationRepositoryProtocol {
 /// 存储位置仓储实现
 /// 满足需求：11.2, 11.3, 11.4, 11.5
 class StorageLocationRepository: StorageLocationRepositoryProtocol {
+    static let shared = StorageLocationRepository()
     private let persistenceController: PersistenceController
     private let logger = Logger(subsystem: "com.restaurant.ingredientmanager", category: "StorageLocationRepository")
     

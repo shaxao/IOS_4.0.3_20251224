@@ -220,7 +220,7 @@ class ScannerService: NSObject, ObservableObject {
     }
     
     /// 解析代码类型
-    private func parseCodeType(_ metadataType: AVMetadataObject.ObjectType) -> ScanResult.CodeType {
+    nonisolated private static func parseCodeType(_ metadataType: AVMetadataObject.ObjectType) -> ScanResult.CodeType {
         switch metadataType {
         case .qr:
             return .qrCode
@@ -245,7 +245,7 @@ extension ScannerService: AVCaptureMetadataOutputObjectsDelegate {
             return
         }
         
-        let codeType = parseCodeType(readableObject.type)
+        let codeType = Self.parseCodeType(readableObject.type)
         let result = ScanResult(
             code: stringValue,
             type: codeType,

@@ -88,12 +88,12 @@ struct ScannerView: View {
         .navigationTitle("扫描")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if onScanComplete != nil {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("取消") {
-                        dismiss()
-                    }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("取消") {
+                    dismiss()
                 }
+                .opacity(onScanComplete == nil ? 0 : 1)
+                .disabled(onScanComplete == nil)
             }
         }
         .task {
@@ -114,7 +114,7 @@ struct ScannerView: View {
                 Text(error)
             }
         }
-        .onChange(of: viewModel.lastScanResult) { _, newResult in
+        .onChange(of: viewModel.lastScanResult) { newResult in
             if let result = newResult, let completion = onScanComplete {
                 completion(result)
             }
