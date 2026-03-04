@@ -41,16 +41,13 @@ targets:
       - framework: Combine.framework
       - sdk: libiconv.2.tbd
       - sdk: libbz2.1.0.tbd
-      - path: RestaurantIngredientManager/JCAPI.a
-      - path: RestaurantIngredientManager/JCLPAPI.a
-      - path: RestaurantIngredientManager/libSkiaRenderLibrary.a
     
     settings:
       base:
         INFOPLIST_FILE: RestaurantIngredientManager/Info.plist
         SWIFT_OBJC_BRIDGING_HEADER: RestaurantIngredientManager/RestaurantIngredientManager-Bridging-Header.h
         LIBRARY_SEARCH_PATHS: $(inherited) $(PROJECT_DIR)/RestaurantIngredientManager
-        OTHER_LDFLAGS: -ObjC -ld64
+        OTHER_LDFLAGS: $(inherited) -ObjC -ld64 $(PROJECT_DIR)/RestaurantIngredientManager/JCAPI.a $(PROJECT_DIR)/RestaurantIngredientManager/JCLPAPI.a $(PROJECT_DIR)/RestaurantIngredientManager/libSkiaRenderLibrary.a
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         DEVELOPMENT_ASSET_PATHS: ""
