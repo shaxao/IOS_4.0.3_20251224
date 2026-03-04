@@ -49,12 +49,6 @@ struct IngredientFormView: View {
                         Text(profile.name).tag(profile.id as UUID?)
                     }
                 }
-
-                Picker("类别", selection: $viewModel.category) {
-                    ForEach(Category.allCases, id: \.self) { category in
-                        Text(category.rawValue).tag(category)
-                    }
-                }
             }
 
             if let profile = viewModel.activeCategoryProfile {
@@ -167,45 +161,84 @@ struct IngredientFormView: View {
 
     @ViewBuilder
     private func dynamicFieldInput(field: IngredientFieldDefinition) -> some View {
-        switch field.key {
-        case .thawTime:
-            Stepper("\(field.alias)：\(viewModel.thawDurationMinutes) 分钟", value: $viewModel.thawDurationMinutes, in: 0...10080)
-        case .preserveTime:
-            Stepper("\(field.alias)：\(viewModel.preserveDurationMinutes) 分钟", value: $viewModel.preserveDurationMinutes, in: 0...43200)
-        case .useTime:
+        switch field.kind {
+        case .duration:
+            let duration = viewModel.durationValue(for: field.key)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text(field.alias)
+                    Spacer()
+                    Text(DurationCalculator.formatAsChineseDuration(duration))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                HStack {
+                    Stepper(
+                        "\(duration.amount)",
+                        value: Binding(
+                            get: { viewModel.durationValue(for: field.key).amount },
+                            set: { viewModel.updateDurationAmount($0, for: field.key) }
+                        ),
+                        in: 0...50000
+                    )
+                    Picker(
+                        "",
+                        selection: Binding(
+                            get: { viewModel.durationValue(for: field.key).unit },
+                            set: { viewModel.updateDurationUnit($0, for: field.key) }
+                        )
+                    ) {
+                        ForEach(DurationUnit.allCases) { unit in
+                            Text(unit.displayName).tag(unit)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                }
+                if duration.unit == .custom {
+                    TextField(
+                        "自定义分钟",
+                        value: Binding(
+                            get: { viewModel.durationValue(for: field.key).customMinutes ?? 0 },
+                            set: { viewModel.updateCustomMinutes($0, for: field.key) }
+                        ),
+                        format: .number
+                    )
+                    .keyboardType(.numberPad)
+                }
+            }
+        case .computedTime:
             HStack {
                 Text(field.alias)
                 Spacer()
-                Text(viewModel.calculatedUseTime.formatted(date: .abbreviated, time: .shortened))
+                Text(
+                    field.key == .useTime
+                    ? viewModel.calculatedUseTime.formatted(date: .abbreviated, time: .shortened)
+                    : viewModel.calculatedExpTime.formatted(date: .abbreviated, time: .shortened)
+                )
                     .foregroundColor(.secondary)
             }
-        case .expTime:
-            HStack {
-                Text(field.alias)
-                Spacer()
-                Text(viewModel.calculatedExpTime.formatted(date: .abbreviated, time: .shortened))
-                    .foregroundColor(.secondary)
-            }
-        case .name:
-            HStack {
-                Text(field.alias)
-                Spacer()
-                Text(viewModel.name)
-                    .foregroundColor(.secondary)
-            }
-        case .stock:
+        case .number:
             TextField(field.alias, value: $viewModel.quantity, format: .number)
                 .keyboardType(.decimalPad)
-        case .unit:
-            TextField(field.alias, text: $viewModel.unit)
-        case .operatorName, .storageCondition:
-            TextField(
-                field.alias,
-                text: Binding(
-                    get: { viewModel.dynamicFieldValues[field.key.rawValue] ?? "" },
-                    set: { viewModel.updateDynamicFieldValue($0, for: field.key) }
+        case .text:
+            if field.key == .name {
+                HStack {
+                    Text(field.alias)
+                    Spacer()
+                    Text(viewModel.name)
+                        .foregroundColor(.secondary)
+                }
+            } else if field.key == .unit {
+                TextField(field.alias, text: $viewModel.unit)
+            } else {
+                TextField(
+                    field.alias,
+                    text: Binding(
+                        get: { viewModel.dynamicFieldValues[field.key.rawValue] ?? "" },
+                        set: { viewModel.updateDynamicFieldValue($0, for: field.key) }
+                    )
                 )
-            )
+            }
         }
     }
 }

@@ -11,7 +11,7 @@ import SwiftUI
 /// 标签打印视图
 struct LabelPrintView: View {
     let ingredient: Ingredient
-    @StateObject private var viewModel = PrinterViewModel()
+    @StateObject private var viewModel = PrinterViewModel.shared
     @StateObject private var profileStore = IngredientCategoryProfileStore.shared
     @State private var selectedTemplate: LabelTemplate?
     @State private var copies: Int = 1

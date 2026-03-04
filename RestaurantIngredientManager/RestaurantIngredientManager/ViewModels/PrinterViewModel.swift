@@ -12,6 +12,7 @@ import Combine
 /// 打印机视图模型
 @MainActor
 class PrinterViewModel: ObservableObject {
+    static let shared = PrinterViewModel()
     // MARK: - Published Properties
     
     /// 可用的打印机列表
@@ -37,6 +38,7 @@ class PrinterViewModel: ObservableObject {
     
     /// 成功信息
     @Published var successMessage: String?
+    @Published var showingReconnectAlert: Bool = false
     
     /// 批量打印进度（0-1）
     @Published private(set) var batchPrintProgress: Double = 0
@@ -45,12 +47,24 @@ class PrinterViewModel: ObservableObject {
     
     private let printerService: PrinterServiceProtocol
     private var cancellables = Set<AnyCancellable>()
+    private var heartbeatTask: Task<Void, Never>?
+    private let defaults: UserDefaults
+    private let pairedPrinterKey = "printer.paired.device"
     
     // MARK: - Initialization
     
-    init(printerService: PrinterServiceProtocol = PrinterService.shared) {
+    init(
+        printerService: PrinterServiceProtocol = PrinterService.shared,
+        defaults: UserDefaults = .standard,
+        enableHeartbeat: Bool = true
+    ) {
         self.printerService = printerService
+        self.defaults = defaults
         setupBindings()
+        restorePairedPrinter()
+        if enableHeartbeat {
+            startHeartbeat()
+        }
     }
     
     // MARK: - Public Methods
@@ -98,6 +112,8 @@ class PrinterViewModel: ObservableObject {
             try await printerService.connect(to: printer)
             connectedPrinter = printer
             successMessage = "已连接到 \(printer.name)"
+            persistPairedPrinter(printer)
+            showingReconnectAlert = false
             
             // 连接后立即查询状态
             await refreshStatus()
@@ -115,6 +131,7 @@ class PrinterViewModel: ObservableObject {
             connectedPrinter = nil
             printerStatus = PrinterStatus()
             successMessage = "已断开连接"
+            defaults.removeObject(forKey: pairedPrinterKey)
         } catch {
             errorMessage = "断开连接失败: \(error.localizedDescription)"
         }
@@ -127,7 +144,9 @@ class PrinterViewModel: ObservableObject {
         do {
             printerStatus = try await printerService.getPrinterStatus()
         } catch {
+            printerStatus.isConnected = false
             errorMessage = "查询状态失败: \(error.localizedDescription)"
+            await reconnectIfNeeded()
         }
     }
     
@@ -279,6 +298,54 @@ class PrinterViewModel: ObservableObject {
         // 订阅打印机状态变化
         printerService.statusPublisher
             .receive(on: DispatchQueue.main)
-            .assign(to: &$printerStatus)
+            .sink { [weak self] status in
+                guard let self else { return }
+                self.printerStatus = status
+                if status.isConnected {
+                    self.showingReconnectAlert = false
+                }
+            }
+            .store(in: &cancellables)
+    }
+
+    private func persistPairedPrinter(_ printer: PrinterDevice) {
+        if let data = try? JSONEncoder().encode(printer) {
+            defaults.set(data, forKey: pairedPrinterKey)
+        }
+    }
+
+    private func restorePairedPrinter() {
+        guard let data = defaults.data(forKey: pairedPrinterKey),
+              let printer = try? JSONDecoder().decode(PrinterDevice.self, from: data) else {
+            return
+        }
+        connectedPrinter = printer
+    }
+
+    private func startHeartbeat() {
+        heartbeatTask?.cancel()
+        heartbeatTask = Task { [weak self] in
+            guard let self else { return }
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                await self.refreshStatus()
+            }
+        }
+    }
+
+    private func reconnectIfNeeded() async {
+        guard let printer = connectedPrinter else {
+            return
+        }
+        do {
+            try await Task.sleep(nanoseconds: 1_000_000_000)
+            try await printerService.connect(to: printer)
+            printerStatus = try await printerService.getPrinterStatus()
+            successMessage = "打印机已自动重连"
+            showingReconnectAlert = false
+        } catch {
+            showingReconnectAlert = true
+            errorMessage = "打印机连接已断开，请重新配对"
+        }
     }
 }

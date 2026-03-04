@@ -48,8 +48,8 @@ class IngredientDetailViewModel: ObservableObject {
     @Published var notes: String?
 
     @Published var selectedCategoryProfileID: UUID?
-    @Published var thawDurationMinutes: Int = 0
-    @Published var preserveDurationMinutes: Int = 0
+    @Published var thawDuration: DurationValue = DurationValue()
+    @Published var preserveDuration: DurationValue = DurationValue()
     @Published private(set) var calculatedUseTime: Date = Date()
     @Published private(set) var calculatedExpTime: Date = Date()
     @Published var dynamicFieldValues: [String: String] = [:]
@@ -81,7 +81,7 @@ class IngredientDetailViewModel: ObservableObject {
     
     /// 是否可以保存
     var canSave: Bool {
-        !name.isEmpty && validationErrors.isEmpty
+        !name.isEmpty && validationErrors.isEmpty && requiredFieldsSatisfied()
     }
 
     var activeCategoryProfile: IngredientCategoryProfile? {
@@ -115,7 +115,6 @@ class IngredientDetailViewModel: ObservableObject {
     func loadIngredient(_ ingredient: Ingredient) {
         ingredientID = ingredient.id
         name = ingredient.name
-        category = ingredient.category
         quantity = ingredient.quantity
         unit = ingredient.unit
         minimumStockThreshold = ingredient.minimumStockThreshold
@@ -126,8 +125,8 @@ class IngredientDetailViewModel: ObservableObject {
         notes = ingredient.plainNotes
         if let metadata = ingredient.dynamicMetadata {
             selectedCategoryProfileID = metadata.categoryProfileID
-            thawDurationMinutes = metadata.thawMinutes ?? 0
-            preserveDurationMinutes = metadata.preserveMinutes ?? 0
+            thawDuration = metadata.thawDuration ?? DurationValue()
+            preserveDuration = metadata.preserveDuration ?? DurationValue()
             dynamicFieldValues = metadata.fieldValues
             calculatedUseTime = metadata.useTimestamp ?? Date()
             calculatedExpTime = metadata.expTimestamp ?? ingredient.expirationDate
@@ -178,7 +177,7 @@ class IngredientDetailViewModel: ObservableObject {
                 }
                 
                 ingredient.name = name
-                ingredient.category = category
+                ingredient.category = mappedCategoryFromProfile()
                 ingredient.quantity = quantity
                 ingredient.unit = unit
                 ingredient.minimumStockThreshold = minimumStockThreshold
@@ -191,8 +190,8 @@ class IngredientDetailViewModel: ObservableObject {
                 let metadata = IngredientDynamicMetadata(
                     categoryProfileID: profile?.id,
                     categoryProfileName: profile?.name,
-                    thawMinutes: thawDurationMinutes,
-                    preserveMinutes: preserveDurationMinutes,
+                    thawDuration: thawDuration,
+                    preserveDuration: preserveDuration,
                     thawTimestamp: timeline.thawTime,
                     useTimestamp: timeline.useTime,
                     expTimestamp: timeline.expTime,
@@ -208,8 +207,8 @@ class IngredientDetailViewModel: ObservableObject {
                 let metadata = IngredientDynamicMetadata(
                     categoryProfileID: profile?.id,
                     categoryProfileName: profile?.name,
-                    thawMinutes: thawDurationMinutes,
-                    preserveMinutes: preserveDurationMinutes,
+                    thawDuration: thawDuration,
+                    preserveDuration: preserveDuration,
                     thawTimestamp: timeline.thawTime,
                     useTimestamp: timeline.useTime,
                     expTimestamp: timeline.expTime,
@@ -218,7 +217,7 @@ class IngredientDetailViewModel: ObservableObject {
                 // 创建新食材
                 let ingredient = Ingredient(
                     name: name,
-                    category: category,
+                    category: mappedCategoryFromProfile(),
                     quantity: quantity,
                     unit: unit,
                     expirationDate: timeline.expTime,
@@ -283,8 +282,8 @@ class IngredientDetailViewModel: ObservableObject {
         barcode = nil
         notes = nil
         selectedCategoryProfileID = categoryStore.profiles.first?.id
-        thawDurationMinutes = 0
-        preserveDurationMinutes = 0
+        thawDuration = DurationValue()
+        preserveDuration = DurationValue()
         dynamicFieldValues = [:]
         recalculateTimes()
         errorMessage = nil
@@ -296,11 +295,63 @@ class IngredientDetailViewModel: ObservableObject {
     }
 
     func recalculateTimes(from thawTime: Date = Date()) {
-        let useTime = Calendar.current.date(byAdding: .minute, value: thawDurationMinutes, to: thawTime) ?? thawTime
-        let expTime = Calendar.current.date(byAdding: .minute, value: preserveDurationMinutes, to: useTime) ?? useTime
+        let useTime = DurationCalculator.add(thawDuration, to: thawTime)
+        let expTime = DurationCalculator.add(preserveDuration, to: useTime)
         calculatedUseTime = useTime
         calculatedExpTime = expTime
         expirationDate = expTime
+        dynamicFieldValues[IngredientFieldKey.thawTime.rawValue] = DurationCalculator.formatAsChineseDuration(thawDuration)
+        dynamicFieldValues[IngredientFieldKey.preserveTime.rawValue] = DurationCalculator.formatAsChineseDuration(preserveDuration)
+        dynamicFieldValues[IngredientFieldKey.useTime.rawValue] = useTime.formatted(date: .numeric, time: .shortened)
+        dynamicFieldValues[IngredientFieldKey.expTime.rawValue] = expTime.formatted(date: .numeric, time: .shortened)
+    }
+
+    func updateDurationAmount(_ amount: Int, for key: IngredientFieldKey) {
+        switch key {
+        case .thawTime:
+            thawDuration.amount = max(amount, 0)
+        case .preserveTime:
+            preserveDuration.amount = max(amount, 0)
+        default:
+            break
+        }
+        recalculateTimes()
+    }
+
+    func updateDurationUnit(_ unit: DurationUnit, for key: IngredientFieldKey) {
+        switch key {
+        case .thawTime:
+            thawDuration.unit = unit
+        case .preserveTime:
+            preserveDuration.unit = unit
+        default:
+            break
+        }
+        recalculateTimes()
+    }
+
+    func updateCustomMinutes(_ minutes: Int, for key: IngredientFieldKey) {
+        let value = max(minutes, 0)
+        switch key {
+        case .thawTime:
+            thawDuration.customMinutes = value
+        case .preserveTime:
+            preserveDuration.customMinutes = value
+        default:
+            break
+        }
+        recalculateTimes()
+    }
+
+    func durationValue(for key: IngredientFieldKey) -> DurationValue {
+        switch key {
+        case .thawTime:
+            return thawDuration
+        case .preserveTime:
+            return preserveDuration
+        default:
+            return DurationValue()
+        }
     }
     
     // MARK: - Private Methods
@@ -349,7 +400,7 @@ class IngredientDetailViewModel: ObservableObject {
             }
             .assign(to: &$validationErrors)
 
-        Publishers.CombineLatest($thawDurationMinutes, $preserveDurationMinutes)
+        Publishers.CombineLatest($thawDuration, $preserveDuration)
             .sink { [weak self] _, _ in
                 self?.recalculateTimes()
             }
@@ -358,10 +409,46 @@ class IngredientDetailViewModel: ObservableObject {
 }
 
 private extension IngredientDetailViewModel {
+    func mappedCategoryFromProfile() -> Category {
+        guard let profileName = activeCategoryProfile?.name else {
+            return category
+        }
+        let matched = Category.allCases.first(where: { $0.rawValue == profileName })
+        return matched ?? .other
+    }
+
+    func requiredFieldsSatisfied() -> Bool {
+        guard let profile = activeCategoryProfile else {
+            return true
+        }
+        for field in profile.fields where field.enabled && field.required {
+            switch field.key {
+            case .name:
+                if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    return false
+                }
+            case .thawTime:
+                if DurationCalculator.totalMinutes(for: thawDuration) <= 0 {
+                    return false
+                }
+            case .preserveTime:
+                if DurationCalculator.totalMinutes(for: preserveDuration) <= 0 {
+                    return false
+                }
+            case .stock, .unit, .useTime, .expTime, .operatorName, .storageCondition:
+                let value = dynamicFieldValues[field.key.rawValue] ?? ""
+                if field.kind == .text && value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && field.key != .unit {
+                    return false
+                }
+            }
+        }
+        return true
+    }
+
     func currentTimeline() -> (thawTime: Date, useTime: Date, expTime: Date) {
         let thawTime = Date()
-        let useTime = Calendar.current.date(byAdding: .minute, value: thawDurationMinutes, to: thawTime) ?? thawTime
-        let expTime = Calendar.current.date(byAdding: .minute, value: preserveDurationMinutes, to: useTime) ?? useTime
+        let useTime = DurationCalculator.add(thawDuration, to: thawTime)
+        let expTime = DurationCalculator.add(preserveDuration, to: useTime)
         return (thawTime, useTime, expTime)
     }
 }

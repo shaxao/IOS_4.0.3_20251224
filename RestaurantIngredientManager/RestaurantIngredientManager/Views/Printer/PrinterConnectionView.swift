@@ -10,7 +10,7 @@ import SwiftUI
 
 /// 打印机连接视图
 struct PrinterConnectionView: View {
-    @StateObject private var viewModel = PrinterViewModel()
+    @StateObject private var viewModel = PrinterViewModel.shared
     @State private var selectedConnectionType: ConnectionType = .bluetooth
     @State private var showingStatusView = false
     @State private var isRunningTestPrint = false
@@ -160,6 +160,16 @@ struct PrinterConnectionView: View {
             if let message = viewModel.successMessage {
                 Text(message)
             }
+        }
+        .alert("连接异常", isPresented: $viewModel.showingReconnectAlert) {
+            Button("重新配对") {
+                viewModel.showingReconnectAlert = false
+            }
+            Button("取消", role: .cancel) {
+                viewModel.showingReconnectAlert = false
+            }
+        } message: {
+            Text("打印机状态同步失败，请重新配对。")
         }
     }
 

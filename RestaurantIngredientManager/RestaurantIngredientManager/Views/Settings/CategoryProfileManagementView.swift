@@ -1,4 +1,6 @@
 import SwiftUI
+import PhotosUI
+import UIKit
 
 struct CategoryProfileManagementView: View {
     @StateObject private var store = IngredientCategoryProfileStore.shared
@@ -40,25 +42,57 @@ struct CategoryProfileManagementView: View {
     }
 }
 
+private struct CanvasBlock: Identifiable, Equatable {
+    enum Kind {
+        case text
+        case image
+    }
+
+    var id: UUID
+    var kind: Kind
+    var key: String
+    var value: String
+    var x: CGFloat
+    var y: CGFloat
+    var width: CGFloat
+    var height: CGFloat
+    var fontSize: CGFloat
+    var isBold: Bool
+    var isItalic: Bool
+    var color: Color
+}
+
 struct CategoryProfileEditorView: View {
     @State private var profile: IngredientCategoryProfile
     @StateObject private var store = IngredientCategoryProfileStore.shared
     @Environment(\.dismiss) private var dismiss
-    @State private var templateText: String
+    @State private var selectedPaper = "40×30mm"
+    @State private var blocks: [CanvasBlock] = []
+    @State private var selectedBlockID: UUID?
+    @State private var pickedPhotoItem: PhotosPickerItem?
+    @State private var pendingImage: UIImage?
+    @State private var showingCamera = false
     @State private var previewData: [String: String] = [
         "name": "牛奶",
-        "thawTime": "2026/03/04 09:20",
-        "useTime": "2026/03/04 11:20",
-        "expTime": "2026/03/05 11:20",
+        "thawTime": "0年0月0日4时0分",
+        "preserveTime": "0年0月2日0时0分",
+        "useTime": "2026/03/04 13:20",
+        "expTime": "2026/03/06 13:20",
         "operatorName": "Alice",
         "storageCondition": "2-6°C",
         "stock": "8",
         "unit": "盒"
     ]
 
+    private let papers: [String: CGSize] = [
+        "A4": CGSize(width: 210, height: 297),
+        "58mm": CGSize(width: 58, height: 40),
+        "80mm": CGSize(width: 80, height: 50),
+        "40×30mm": CGSize(width: 40, height: 30)
+    ]
+
     init(profile: IngredientCategoryProfile) {
         _profile = State(initialValue: profile)
-        _templateText = State(initialValue: profile.activeTemplate.template)
     }
 
     var body: some View {
@@ -74,30 +108,59 @@ struct CategoryProfileEditorView: View {
                             .labelsHidden()
                         TextField("别名", text: $profile.fields[index].alias)
                         Spacer()
-                        Text("{{\(profile.fields[index].key.rawValue)}}")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
                     }
                 }
             }
 
-            Section("模板编辑（40×30mm）") {
-                TextEditor(text: $templateText)
-                    .frame(minHeight: 130)
-                Text("可用占位符: \(profile.fields.filter(\.enabled).map { "{{\($0.key.rawValue)}}" }.joined(separator: " "))")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("预览")
-                        .font(.headline)
-                    Text(LabelTemplateEngine.render(templateText, with: previewData))
-                        .font(.system(size: 12, weight: .medium, design: .monospaced))
-                        .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
-                        .padding(8)
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 8).stroke(Color.secondary.opacity(0.4))
-                        }
+            Section("纸张") {
+                Picker("尺寸", selection: $selectedPaper) {
+                    ForEach(Array(papers.keys), id: \.self) { key in
+                        Text(key).tag(key)
+                    }
                 }
+                .pickerStyle(.segmented)
+            }
+
+            Section("画布工具栏") {
+                HStack {
+                    Button("添加文本") {
+                        addTextBlock()
+                    }
+                    Spacer()
+                    Button("添加图片框") {
+                        addImageBlock()
+                    }
+                }
+                HStack {
+                    PhotosPicker("点击上传", selection: $pickedPhotoItem, matching: .images)
+                    Spacer()
+                    Button("拍照") {
+                        showingCamera = true
+                    }
+                }
+                if let index = selectedBlockIndex {
+                    Stepper("字体 \(Int(blocks[index].fontSize))", value: $blocks[index].fontSize, in: 8...40)
+                    Toggle("加粗", isOn: $blocks[index].isBold)
+                    Toggle("斜体", isOn: $blocks[index].isItalic)
+                    ColorPicker("颜色", selection: $blocks[index].color)
+                }
+            }
+
+            Section("字段素材") {
+                ScrollView(.horizontal) {
+                    HStack {
+                        ForEach(profile.fields.filter(\.enabled)) { field in
+                            Button(field.alias) {
+                                addFieldBlock(field)
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }
+                }
+            }
+
+            Section("可视化预览") {
+                canvasView
             }
 
             Section("模板版本") {
@@ -110,13 +173,37 @@ struct CategoryProfileEditorView: View {
                     store.rollbackTemplate(profileID: profile.id, to: profile.activeTemplateVersion)
                     if let refreshed = store.profile(by: profile.id) {
                         profile = refreshed
-                        templateText = refreshed.activeTemplate.template
+                        loadCanvas(from: refreshed.activeTemplate.template)
                     }
                 }
             }
         }
         .navigationTitle("分类编辑")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            loadCanvas(from: profile.activeTemplate.template)
+        }
+        .onChange(of: pickedPhotoItem) { item in
+            guard let item else { return }
+            Task {
+                if let data = try? await item.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    let resized = resizeImage(image)
+                    await MainActor.run {
+                        pendingImage = resized
+                        if let index = selectedBlockIndex, blocks[index].kind == .image {
+                            blocks[index].value = "image"
+                        }
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showingCamera) {
+            CameraPicker { image in
+                pendingImage = resizeImage(image)
+                showingCamera = false
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button("取消") {
@@ -131,19 +218,272 @@ struct CategoryProfileEditorView: View {
         }
     }
 
+    private var selectedBlockIndex: Int? {
+        blocks.firstIndex(where: { $0.id == selectedBlockID })
+    }
+
+    private var canvasSize: CGSize {
+        let selected = papers[selectedPaper] ?? CGSize(width: 40, height: 30)
+        let ratio = selected.width / selected.height
+        return CGSize(width: 300, height: 300 / ratio)
+    }
+
+    private var canvasView: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.black.opacity(0.03))
+            ForEach(blocks) { block in
+                canvasBlockView(block)
+            }
+        }
+        .frame(width: canvasSize.width, height: canvasSize.height)
+        .padding(.vertical, 8)
+    }
+
+    @ViewBuilder
+    private func canvasBlockView(_ block: CanvasBlock) -> some View {
+        Group {
+            if block.kind == .image {
+                ZStack {
+                    Rectangle().fill(Color.blue.opacity(0.1))
+                    if pendingImage != nil {
+                        Image(uiImage: pendingImage!)
+                            .resizable()
+                            .scaledToFill()
+                    } else {
+                        Image(systemName: "photo")
+                            .foregroundColor(.secondary)
+                    }
+                }
+            } else {
+                Text(previewData[block.key] ?? block.value)
+                    .font(.system(size: block.fontSize, weight: block.isBold ? .bold : .regular, design: .default))
+                    .rotationEffect(.degrees(block.isItalic ? -4 : 0))
+                    .foregroundColor(block.color)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                    .padding(4)
+            }
+        }
+        .frame(width: block.width, height: block.height)
+        .overlay(
+            RoundedRectangle(cornerRadius: 6)
+                .stroke(block.id == selectedBlockID ? Color.blue : Color.clear, lineWidth: 1)
+        )
+        .position(x: block.x, y: block.y)
+        .gesture(
+            DragGesture()
+                .onChanged { value in
+                    guard let index = blocks.firstIndex(where: { $0.id == block.id }) else { return }
+                    blocks[index].x = min(max(value.location.x, 0), canvasSize.width)
+                    blocks[index].y = min(max(value.location.y, 0), canvasSize.height)
+                    selectedBlockID = block.id
+                }
+        )
+        .onTapGesture {
+            selectedBlockID = block.id
+        }
+    }
+
+    private func addFieldBlock(_ field: IngredientFieldDefinition) {
+        let id = UUID()
+        let block = CanvasBlock(
+            id: id,
+            kind: .text,
+            key: field.key.rawValue,
+            value: field.alias,
+            x: 80,
+            y: CGFloat(40 + blocks.count * 24),
+            width: 120,
+            height: 24,
+            fontSize: 12,
+            isBold: false,
+            isItalic: false,
+            color: .primary
+        )
+        blocks.append(block)
+        selectedBlockID = id
+    }
+
+    private func addTextBlock() {
+        let id = UUID()
+        blocks.append(
+            CanvasBlock(
+                id: id,
+                kind: .text,
+                key: "name",
+                value: "文本",
+                x: 90,
+                y: 40,
+                width: 120,
+                height: 24,
+                fontSize: 12,
+                isBold: false,
+                isItalic: false,
+                color: .primary
+            )
+        )
+        selectedBlockID = id
+    }
+
+    private func addImageBlock() {
+        let id = UUID()
+        blocks.append(
+            CanvasBlock(
+                id: id,
+                kind: .image,
+                key: "image",
+                value: "image",
+                x: 220,
+                y: 80,
+                width: 72,
+                height: 54,
+                fontSize: 10,
+                isBold: false,
+                isItalic: false,
+                color: .primary
+            )
+        )
+        selectedBlockID = id
+    }
+
+    private func loadCanvas(from rawTemplate: String) {
+        guard let payload = LabelTemplateEngine.decodeCanvasTemplate(rawTemplate) else {
+            blocks = [
+                CanvasBlock(id: UUID(), kind: .text, key: "name", value: "名称", x: 80, y: 30, width: 140, height: 24, fontSize: 12, isBold: true, isItalic: false, color: .primary),
+                CanvasBlock(id: UUID(), kind: .text, key: "useTime", value: "使用时间", x: 80, y: 60, width: 170, height: 22, fontSize: 10, isBold: false, isItalic: false, color: .primary),
+                CanvasBlock(id: UUID(), kind: .text, key: "expTime", value: "到期时间", x: 80, y: 86, width: 170, height: 22, fontSize: 10, isBold: false, isItalic: false, color: .primary)
+            ]
+            return
+        }
+        blocks = payload.items.map {
+            CanvasBlock(
+                id: $0.id,
+                kind: $0.kind == .image ? .image : .text,
+                key: $0.key,
+                value: $0.key,
+                x: $0.x,
+                y: $0.y,
+                width: $0.width,
+                height: $0.height,
+                fontSize: $0.fontSize,
+                isBold: $0.isBold,
+                isItalic: $0.isItalic,
+                color: Color(hex: $0.colorHex)
+            )
+        }
+        selectedPaper = payload.paper
+    }
+
     private func save() {
         var updated = profile
         updated.updatedAt = Date()
-        store.saveTemplate(profileID: updated.id, template: templateText)
+        let payload = CanvasTemplatePayload(
+            paper: selectedPaper,
+            items: blocks.map {
+                CanvasTemplateItem(
+                    id: $0.id,
+                    kind: $0.kind == .image ? .image : .text,
+                    key: $0.key,
+                    x: $0.x,
+                    y: $0.y,
+                    width: $0.width,
+                    height: $0.height,
+                    fontSize: $0.fontSize,
+                    isBold: $0.isBold,
+                    isItalic: $0.isItalic,
+                    colorHex: $0.colorHexString
+                )
+            }
+        )
+        let encoded = LabelTemplateEngine.encodeCanvasTemplate(payload)
+        store.saveTemplate(profileID: updated.id, template: encoded)
         if let persisted = store.profile(by: updated.id) {
             updated.templateVersions = persisted.templateVersions
             updated.activeTemplateVersion = persisted.activeTemplateVersion
-        } else {
-            let nextVersion = (updated.templateVersions.map(\.version).max() ?? 0) + 1
-            updated.templateVersions.append(LabelTemplateVersion(version: nextVersion, template: templateText))
-            updated.activeTemplateVersion = nextVersion
         }
         store.upsert(updated)
         dismiss()
+    }
+
+    private func resizeImage(_ image: UIImage) -> UIImage {
+        let target = CGSize(width: 300, height: 300)
+        let renderer = UIGraphicsImageRenderer(size: target)
+        return renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: target))
+        }
+    }
+}
+
+private struct CameraPicker: UIViewControllerRepresentable {
+    let onPick: (UIImage) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = UIImagePickerController.isSourceTypeAvailable(.camera) ? .camera : .photoLibrary
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onPick: onPick, dismiss: dismiss)
+    }
+
+    final class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
+        let onPick: (UIImage) -> Void
+        let dismiss: DismissAction
+
+        init(onPick: @escaping (UIImage) -> Void, dismiss: DismissAction) {
+            self.onPick = onPick
+            self.dismiss = dismiss
+        }
+
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+            if let image = info[.originalImage] as? UIImage {
+                onPick(image)
+            }
+            dismiss()
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            dismiss()
+        }
+    }
+}
+
+private extension Color {
+    init(hex: String) {
+        let cleaned = hex.replacingOccurrences(of: "#", with: "")
+        if let value = Int(cleaned, radix: 16) {
+            let r = Double((value >> 16) & 0xFF) / 255
+            let g = Double((value >> 8) & 0xFF) / 255
+            let b = Double(value & 0xFF) / 255
+            self = Color(red: r, green: g, blue: b)
+        } else {
+            self = .primary
+        }
+    }
+}
+
+private extension CanvasBlock {
+    var colorHexString: String {
+        UIColor(color).toHexString()
+    }
+}
+
+private extension UIColor {
+    func toHexString() -> String {
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        getRed(&red, green: &green, blue: &blue, alpha: nil)
+        return String(
+            format: "#%02X%02X%02X",
+            Int(red * 255),
+            Int(green * 255),
+            Int(blue * 255)
+        )
     }
 }

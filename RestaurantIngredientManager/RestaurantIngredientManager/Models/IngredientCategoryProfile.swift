@@ -14,13 +14,85 @@ enum IngredientFieldKey: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
+enum IngredientFieldKind: String, Codable {
+    case text
+    case duration
+    case computedTime
+    case number
+}
+
+enum DurationUnit: String, Codable, CaseIterable, Identifiable {
+    case minute
+    case hour
+    case day
+    case month
+    case year
+    case custom
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .minute: return "分钟"
+        case .hour: return "小时"
+        case .day: return "天"
+        case .month: return "月"
+        case .year: return "年"
+        case .custom: return "自定义"
+        }
+    }
+}
+
+struct DurationValue: Codable, Equatable {
+    var amount: Int
+    var unit: DurationUnit
+    var customMinutes: Int?
+
+    init(amount: Int = 0, unit: DurationUnit = .minute, customMinutes: Int? = nil) {
+        self.amount = amount
+        self.unit = unit
+        self.customMinutes = customMinutes
+    }
+}
+
 struct IngredientFieldDefinition: Codable, Equatable, Identifiable {
     var key: IngredientFieldKey
     var alias: String
     var enabled: Bool
     var required: Bool
+    var kind: IngredientFieldKind
 
     var id: String { key.rawValue }
+
+    init(key: IngredientFieldKey, alias: String, enabled: Bool, required: Bool, kind: IngredientFieldKind) {
+        self.key = key
+        self.alias = alias
+        self.enabled = enabled
+        self.required = required
+        self.kind = kind
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        key = try container.decode(IngredientFieldKey.self, forKey: .key)
+        alias = try container.decode(String.self, forKey: .alias)
+        enabled = try container.decode(Bool.self, forKey: .enabled)
+        required = try container.decode(Bool.self, forKey: .required)
+        kind = try container.decodeIfPresent(IngredientFieldKind.self, forKey: .kind) ?? IngredientFieldDefinition.defaultKind(for: key)
+    }
+
+    static func defaultKind(for key: IngredientFieldKey) -> IngredientFieldKind {
+        switch key {
+        case .thawTime, .preserveTime:
+            return .duration
+        case .useTime, .expTime:
+            return .computedTime
+        case .stock:
+            return .number
+        default:
+            return .text
+        }
+    }
 }
 
 struct LabelTemplateVersion: Codable, Equatable, Identifiable {
@@ -66,15 +138,15 @@ struct IngredientCategoryProfile: Codable, Equatable, Identifiable {
 
     static var defaultFields: [IngredientFieldDefinition] {
         [
-            IngredientFieldDefinition(key: .name, alias: "名称", enabled: true, required: true),
-            IngredientFieldDefinition(key: .thawTime, alias: "解冻时间", enabled: true, required: true),
-            IngredientFieldDefinition(key: .preserveTime, alias: "保存时间", enabled: true, required: true),
-            IngredientFieldDefinition(key: .useTime, alias: "使用时间", enabled: true, required: false),
-            IngredientFieldDefinition(key: .expTime, alias: "到期时间", enabled: true, required: false),
-            IngredientFieldDefinition(key: .operatorName, alias: "制作人员", enabled: true, required: false),
-            IngredientFieldDefinition(key: .storageCondition, alias: "贮存条件", enabled: true, required: false),
-            IngredientFieldDefinition(key: .stock, alias: "库存", enabled: true, required: false),
-            IngredientFieldDefinition(key: .unit, alias: "单位", enabled: true, required: false)
+            IngredientFieldDefinition(key: .name, alias: "名称", enabled: true, required: true, kind: .text),
+            IngredientFieldDefinition(key: .thawTime, alias: "解冻时间", enabled: true, required: true, kind: .duration),
+            IngredientFieldDefinition(key: .preserveTime, alias: "保存时间", enabled: true, required: true, kind: .duration),
+            IngredientFieldDefinition(key: .useTime, alias: "使用时间", enabled: true, required: false, kind: .computedTime),
+            IngredientFieldDefinition(key: .expTime, alias: "到期时间", enabled: true, required: false, kind: .computedTime),
+            IngredientFieldDefinition(key: .operatorName, alias: "制作人员", enabled: true, required: false, kind: .text),
+            IngredientFieldDefinition(key: .storageCondition, alias: "贮存条件", enabled: true, required: false, kind: .text),
+            IngredientFieldDefinition(key: .stock, alias: "库存", enabled: true, required: false, kind: .number),
+            IngredientFieldDefinition(key: .unit, alias: "单位", enabled: true, required: false, kind: .text)
         ]
     }
 
@@ -86,8 +158,8 @@ struct IngredientCategoryProfile: Codable, Equatable, Identifiable {
 struct IngredientDynamicMetadata: Codable, Equatable {
     var categoryProfileID: UUID?
     var categoryProfileName: String?
-    var thawMinutes: Int?
-    var preserveMinutes: Int?
+    var thawDuration: DurationValue?
+    var preserveDuration: DurationValue?
     var thawTimestamp: Date?
     var useTimestamp: Date?
     var expTimestamp: Date?
@@ -96,8 +168,8 @@ struct IngredientDynamicMetadata: Codable, Equatable {
     init(
         categoryProfileID: UUID? = nil,
         categoryProfileName: String? = nil,
-        thawMinutes: Int? = nil,
-        preserveMinutes: Int? = nil,
+        thawDuration: DurationValue? = nil,
+        preserveDuration: DurationValue? = nil,
         thawTimestamp: Date? = nil,
         useTimestamp: Date? = nil,
         expTimestamp: Date? = nil,
@@ -105,8 +177,8 @@ struct IngredientDynamicMetadata: Codable, Equatable {
     ) {
         self.categoryProfileID = categoryProfileID
         self.categoryProfileName = categoryProfileName
-        self.thawMinutes = thawMinutes
-        self.preserveMinutes = preserveMinutes
+        self.thawDuration = thawDuration
+        self.preserveDuration = preserveDuration
         self.thawTimestamp = thawTimestamp
         self.useTimestamp = useTimestamp
         self.expTimestamp = expTimestamp
