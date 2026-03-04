@@ -396,7 +396,7 @@ typedef void (^JCSDKCACHE_STATE)        (JCSDKCacheStatus status)       ;
  @note
  在进行文本绘制和一维码文字绘制之前，请确保先调用此方法以初始化图像库。初始化失败时，将通过 `error` 参数返回错误信息。
  */
-+(void) initImageProcessing:(NSString *) fontFamilyPath error:(NSError **)error;
++(void) initImageProcessing:(nonnull NSString *) fontFamilyPath error:(NSError * _Nullable * _Nullable)error;
 
 /**
  准备打印任务。
@@ -789,7 +789,7 @@ withImageProcessingValue:(float)imageProcessingValue;
 
  @return 返回生成的标签预览图像。
  */
-+(nullable UIImage *)generateImagePreviewImage:(float)displayScale error:(NSError * _Nullable * _Nullable)error;
++(UIImage *)generateImagePreviewImage:(float)displayScale error:(NSError **)error;
 
 
 /**
