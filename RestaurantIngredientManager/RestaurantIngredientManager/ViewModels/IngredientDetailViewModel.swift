@@ -24,22 +24,22 @@ class IngredientDetailViewModel: ObservableObject {
     @Published var category: Category = .vegetables
     
     /// 当前数量
-    @Published var currentQuantity: Double = 0
+    @Published var quantity: Double = 0
     
     /// 单位
     @Published var unit: String = ""
     
     /// 最小库存量
-    @Published var minimumStock: Double = 0
+    @Published var minimumStockThreshold: Double = 0
     
     /// 保质期
-    @Published var expiryDate: Date?
+    @Published var expirationDate: Date?
     
-    /// 供应商ID
-    @Published var supplierID: UUID?
+    /// 供应商
+    @Published var supplier: Supplier?
     
-    /// 存储位置ID
-    @Published var storageLocationID: UUID?
+    /// 存储位置
+    @Published var storageLocation: StorageLocation = StorageLocation(name: "默认位置", type: .custom)
     
     /// 条形码
     @Published var barcode: String?
@@ -96,12 +96,12 @@ class IngredientDetailViewModel: ObservableObject {
         ingredientID = ingredient.id
         name = ingredient.name
         category = ingredient.category
-        currentQuantity = ingredient.currentQuantity
+        quantity = ingredient.quantity
         unit = ingredient.unit
-        minimumStock = ingredient.minimumStock
-        expiryDate = ingredient.expiryDate
-        supplierID = ingredient.supplierID
-        storageLocationID = ingredient.storageLocationID
+        minimumStockThreshold = ingredient.minimumStockThreshold
+        expirationDate = ingredient.expirationDate
+        supplier = ingredient.supplier
+        storageLocation = ingredient.storageLocation
         barcode = ingredient.barcode
         notes = ingredient.notes
     }
@@ -145,12 +145,12 @@ class IngredientDetailViewModel: ObservableObject {
                 
                 ingredient.name = name
                 ingredient.category = category
-                ingredient.currentQuantity = currentQuantity
+                ingredient.quantity = quantity
                 ingredient.unit = unit
-                ingredient.minimumStock = minimumStock
-                ingredient.expiryDate = expiryDate
-                ingredient.supplierID = supplierID
-                ingredient.storageLocationID = storageLocationID
+                ingredient.minimumStockThreshold = minimumStockThreshold
+                ingredient.expirationDate = expirationDate ?? Date()
+                ingredient.supplier = supplier
+                ingredient.storageLocation = storageLocation
                 ingredient.barcode = barcode
                 ingredient.notes = notes
                 ingredient.updatedAt = Date()
@@ -161,13 +161,14 @@ class IngredientDetailViewModel: ObservableObject {
                 let ingredient = Ingredient(
                     name: name,
                     category: category,
-                    currentQuantity: currentQuantity,
+                    quantity: quantity,
                     unit: unit,
-                    minimumStock: minimumStock,
-                    expiryDate: expiryDate,
-                    supplierID: supplierID,
-                    storageLocationID: storageLocationID,
+                    expirationDate: expirationDate ?? Date(),
+                    storageLocation: storageLocation,
+                    supplier: supplier,
                     barcode: barcode,
+                    qrCode: nil,
+                    minimumStockThreshold: minimumStockThreshold,
                     notes: notes
                 )
                 
@@ -191,7 +192,7 @@ class IngredientDetailViewModel: ObservableObject {
             return false
         }
         
-        currentQuantity = newQuantity
+        quantity = newQuantity
         
         do {
             guard var ingredient = try await repository.fetch(by: id) else {
@@ -199,7 +200,7 @@ class IngredientDetailViewModel: ObservableObject {
                 return false
             }
             
-            ingredient.currentQuantity = newQuantity
+            ingredient.quantity = newQuantity
             ingredient.updatedAt = Date()
             
             try await repository.update(ingredient)
@@ -215,12 +216,12 @@ class IngredientDetailViewModel: ObservableObject {
         ingredientID = nil
         name = ""
         category = .vegetables
-        currentQuantity = 0
+        quantity = 0
         unit = ""
-        minimumStock = 0
-        expiryDate = nil
-        supplierID = nil
-        storageLocationID = nil
+        minimumStockThreshold = 0
+        expirationDate = nil
+        supplier = nil
+        storageLocation = StorageLocation(name: "默认位置", type: .custom)
         barcode = nil
         notes = nil
         errorMessage = nil
@@ -254,7 +255,7 @@ class IngredientDetailViewModel: ObservableObject {
                     return errors
                 },
                 // 验证数量
-                $currentQuantity.map { quantity -> [String] in
+                $quantity.map { quantity -> [String] in
                     var errors: [String] = []
                     if quantity < 0 {
                         errors.append("当前数量不能为负数")
@@ -262,7 +263,7 @@ class IngredientDetailViewModel: ObservableObject {
                     return errors
                 },
                 // 验证最小库存
-                $minimumStock.map { stock -> [String] in
+                $minimumStockThreshold.map { stock -> [String] in
                     var errors: [String] = []
                     if stock < 0 {
                         errors.append("最小库存不能为负数")

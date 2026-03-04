@@ -61,6 +61,7 @@ protocol IngredientRepositoryProtocol {
 /// 食材仓储实现
 /// 满足需求：1.1, 1.2, 1.3, 1.4, 2.2, 2.3, 2.4, 2.5, 2.6, 3.4, 4.3
 class IngredientRepository: IngredientRepositoryProtocol {
+    static let shared = IngredientRepository()
     private let persistenceController: PersistenceController
     private let logger = Logger(subsystem: "com.restaurant.ingredientmanager", category: "IngredientRepository")
     

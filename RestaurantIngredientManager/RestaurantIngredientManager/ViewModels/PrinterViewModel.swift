@@ -183,8 +183,8 @@ class PrinterViewModel: ObservableObject {
         let data: [String: String] = [
             "name": ingredient.name,
             "category": ingredient.category.rawValue,
-            "quantity": "\(ingredient.currentQuantity) \(ingredient.unit)",
-            "expiryDate": ingredient.expiryDate?.formatted(date: .abbreviated, time: .omitted) ?? "无",
+            "quantity": "\(ingredient.quantity) \(ingredient.unit)",
+            "expiryDate": ingredient.expirationDate.formatted(date: .abbreviated, time: .omitted),
             "barcode": ingredient.barcode ?? ingredient.id.uuidString,
             "qrData": ingredient.id.uuidString
         ]
@@ -198,8 +198,8 @@ class PrinterViewModel: ObservableObject {
             let data: [String: String] = [
                 "name": ingredient.name,
                 "category": ingredient.category.rawValue,
-                "quantity": "\(ingredient.currentQuantity) \(ingredient.unit)",
-                "expiryDate": ingredient.expiryDate?.formatted(date: .abbreviated, time: .omitted) ?? "无",
+                "quantity": "\(ingredient.quantity) \(ingredient.unit)",
+                "expiryDate": ingredient.expirationDate.formatted(date: .abbreviated, time: .omitted),
                 "barcode": ingredient.barcode ?? ingredient.id.uuidString,
                 "qrData": ingredient.id.uuidString
             ]

@@ -11,7 +11,7 @@ import SwiftUI
 /// 成本分析视图
 struct CostAnalysisView: View {
     @ObservedObject var viewModel: PurchaseViewModel
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.presentationMode) private var presentationMode
     @State private var showingExportSheet = false
     
     var body: some View {
@@ -104,7 +104,7 @@ struct CostAnalysisView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("完成") {
-                    dismiss()
+                    presentationMode.wrappedValue.dismiss()
                 }
             }
         }

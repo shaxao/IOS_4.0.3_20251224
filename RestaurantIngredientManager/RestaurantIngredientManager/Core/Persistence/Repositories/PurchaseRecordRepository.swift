@@ -64,6 +64,7 @@ protocol PurchaseRecordRepositoryProtocol {
 /// 采购记录仓储实现
 /// 满足需求：13.1, 13.2, 13.3, 13.4, 13.5, 13.6
 class PurchaseRecordRepository: PurchaseRecordRepositoryProtocol {
+    static let shared = PurchaseRecordRepository()
     private let persistenceController: PersistenceController
     private let logger = Logger(subsystem: "com.restaurant.ingredientmanager", category: "PurchaseRecordRepository")
     

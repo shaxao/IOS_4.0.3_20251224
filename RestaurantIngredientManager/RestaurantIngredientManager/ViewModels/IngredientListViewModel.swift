@@ -176,26 +176,25 @@ class IngredientListViewModel: ObservableObject {
         
         // 供应商筛选
         if let supplierID = selectedSupplierID {
-            filtered = filtered.filter { $0.supplierID == supplierID }
+            filtered = filtered.filter { $0.supplier?.id == supplierID }
         }
         
         // 存储位置筛选
         if let locationID = selectedLocationID {
-            filtered = filtered.filter { $0.storageLocationID == locationID }
+            filtered = filtered.filter { $0.storageLocation.id == locationID }
         }
         
         // 过期筛选
         if showExpiringOnly {
             let threshold = Calendar.current.date(byAdding: .day, value: 3, to: Date()) ?? Date()
             filtered = filtered.filter { ingredient in
-                guard let expiryDate = ingredient.expiryDate else { return false }
-                return expiryDate <= threshold
+                ingredient.expirationDate <= threshold
             }
         }
         
         // 低库存筛选
         if showLowStockOnly {
-            filtered = filtered.filter { $0.isLowStock() }
+            filtered = filtered.filter { $0.isLowStock }
         }
         
         filteredIngredients = filtered

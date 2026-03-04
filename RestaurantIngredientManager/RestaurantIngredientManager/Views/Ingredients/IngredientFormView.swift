@@ -50,7 +50,7 @@ struct IngredientFormView: View {
                 }
                 
                 HStack {
-                    TextField("当前数量", value: $viewModel.currentQuantity, format: .number)
+                    TextField("当前数量", value: $viewModel.quantity, format: .number)
                         .keyboardType(.decimalPad)
                     TextField("单位", text: $viewModel.unit)
                         .frame(width: 80)
@@ -59,7 +59,7 @@ struct IngredientFormView: View {
                 HStack {
                     Text("最小库存")
                     Spacer()
-                    TextField("", value: $viewModel.minimumStock, format: .number)
+                    TextField("", value: $viewModel.minimumStockThreshold, format: .number)
                         .keyboardType(.decimalPad)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 100)
@@ -73,15 +73,15 @@ struct IngredientFormView: View {
                 DatePicker(
                     "到期日期",
                     selection: Binding(
-                        get: { viewModel.expiryDate ?? Date() },
-                        set: { viewModel.expiryDate = $0 }
+                        get: { viewModel.expirationDate ?? Date() },
+                        set: { viewModel.expirationDate = $0 }
                     ),
                     displayedComponents: .date
                 )
                 
                 Toggle("设置保质期", isOn: Binding(
-                    get: { viewModel.expiryDate != nil },
-                    set: { if $0 { viewModel.expiryDate = Date() } else { viewModel.expiryDate = nil } }
+                    get: { viewModel.expirationDate != nil },
+                    set: { if $0 { viewModel.expirationDate = Date() } else { viewModel.expirationDate = nil } }
                 ))
             }
             

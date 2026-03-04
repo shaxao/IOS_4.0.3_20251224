@@ -173,17 +173,15 @@ struct IngredientRow: View {
                     .font(.headline)
                 
                 HStack(spacing: 8) {
-                    Text("\(ingredient.currentQuantity.formatted()) \(ingredient.unit)")
+                    Text("\(ingredient.quantity.formatted()) \(ingredient.unit)")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                     
-                    if let expiryDate = ingredient.expiryDate {
-                        Text("·")
-                            .foregroundColor(.secondary)
-                        Text(expiryDate, style: .date)
-                            .font(.caption)
-                            .foregroundColor(ingredient.isExpiringSoon() ? .orange : .secondary)
-                    }
+                    Text("·")
+                        .foregroundColor(.secondary)
+                    Text(ingredient.expirationDate, style: .date)
+                        .font(.caption)
+                        .foregroundColor(ingredient.isExpiringSoon(within: 3) ? .orange : .secondary)
                 }
             }
             
@@ -191,13 +189,13 @@ struct IngredientRow: View {
             
             // 状态徽章
             VStack(alignment: .trailing, spacing: 4) {
-                if ingredient.isExpiringSoon() {
+                if ingredient.isExpiringSoon(within: 3) {
                     Label("即将过期", systemImage: "exclamationmark.triangle.fill")
                         .font(.caption)
                         .foregroundColor(.orange)
                 }
                 
-                if ingredient.isLowStock() {
+                if ingredient.isLowStock {
                     Label("库存低", systemImage: "arrow.down.circle.fill")
                         .font(.caption)
                         .foregroundColor(.red)

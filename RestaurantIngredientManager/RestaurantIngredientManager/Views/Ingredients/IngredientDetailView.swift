@@ -27,19 +27,19 @@ struct IngredientDetailView: View {
             Section("基本信息") {
                 DetailRow(label: "名称", value: viewModel.name)
                 DetailRow(label: "类别", value: viewModel.category.rawValue)
-                DetailRow(label: "当前数量", value: "\(viewModel.currentQuantity.formatted()) \(viewModel.unit)")
-                DetailRow(label: "最小库存", value: "\(viewModel.minimumStock.formatted()) \(viewModel.unit)")
+                DetailRow(label: "当前数量", value: "\(viewModel.quantity.formatted()) \(viewModel.unit)")
+                DetailRow(label: "最小库存", value: "\(viewModel.minimumStockThreshold.formatted()) \(viewModel.unit)")
             }
             
             // 日期信息
             Section("日期信息") {
-                if let expiryDate = viewModel.expiryDate {
+                if let expiryDate = viewModel.expirationDate {
                     HStack {
                         Text("保质期")
                         Spacer()
                         Text(expiryDate, style: .date)
-                            .foregroundColor(ingredient.isExpiringSoon() ? .orange : .primary)
-                        if ingredient.isExpiringSoon() {
+                            .foregroundColor(ingredient.isExpiringSoon(within: 3) ? .orange : .primary)
+                        if ingredient.isExpiringSoon(within: 3) {
                             Image(systemName: "exclamationmark.triangle.fill")
                                 .foregroundColor(.orange)
                         }
@@ -132,10 +132,11 @@ struct DetailRow: View {
         IngredientDetailView(ingredient: Ingredient(
             name: "鸡胸肉",
             category: .meat,
-            currentQuantity: 5,
+            quantity: 5,
             unit: "kg",
-            minimumStock: 2,
-            expiryDate: Date().addingTimeInterval(86400 * 2),
+            expirationDate: Date().addingTimeInterval(86400 * 2),
+            storageLocation: StorageLocation(name: "冷藏区", type: .refrigerator),
+            minimumStockThreshold: 2,
             barcode: "1234567890",
             notes: "新鲜鸡胸肉"
         ))

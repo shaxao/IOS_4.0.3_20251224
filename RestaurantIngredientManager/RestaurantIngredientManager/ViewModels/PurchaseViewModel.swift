@@ -102,17 +102,22 @@ class PurchaseViewModel: ObservableObject {
         errorMessage = nil
         
         do {
+            guard let supplierID = supplierID else {
+                errorMessage = "请选择供应商"
+                isSaving = false
+                return false
+            }
             let record = PurchaseRecord(
-                ingredientID: ingredientID,
-                supplierID: supplierID,
+                ingredientId: ingredientID,
+                supplierId: supplierID,
                 quantity: quantity,
-                unitPrice: unitPrice,
+                unitCost: unitPrice,
                 totalCost: totalCost,
                 purchaseDate: purchaseDate,
                 notes: notes
             )
             
-            _ = try await repository.create(record)
+            try await repository.create(record)
             successMessage = "采购记录创建成功"
             await loadPurchaseRecords()
             isSaving = false
@@ -143,8 +148,10 @@ class PurchaseViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            purchaseRecords = try await repository.fetchByIngredient(ingredientID)
+            let criteria = PurchaseRecordQueryCriteria(ingredientIds: [ingredientID])
+            purchaseRecords = try await repository.query(by: criteria)
             applyFilters()
+            await calculateCosts()
         } catch {
             errorMessage = "查询失败: \(error.localizedDescription)"
         }
@@ -158,8 +165,10 @@ class PurchaseViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            purchaseRecords = try await repository.fetchBySupplier(supplierID)
+            let criteria = PurchaseRecordQueryCriteria(supplierIds: [supplierID])
+            purchaseRecords = try await repository.query(by: criteria)
             applyFilters()
+            await calculateCosts()
         } catch {
             errorMessage = "查询失败: \(error.localizedDescription)"
         }
@@ -194,7 +203,9 @@ class PurchaseViewModel: ObservableObject {
     /// 导出数据
     func exportData() async -> String? {
         do {
-            return try await repository.exportToCSV(purchaseRecords)
+            let criteria = buildCriteria()
+            let data = try await repository.exportData(by: criteria)
+            return String(data: data, encoding: .utf8)
         } catch {
             errorMessage = "导出失败: \(error.localizedDescription)"
             return nil
@@ -225,12 +236,12 @@ class PurchaseViewModel: ObservableObject {
         
         // 食材筛选
         if let ingredientID = selectedIngredientID {
-            filtered = filtered.filter { $0.ingredientID == ingredientID }
+            filtered = filtered.filter { $0.ingredientId == ingredientID }
         }
         
         // 供应商筛选
         if let supplierID = selectedSupplierID {
-            filtered = filtered.filter { $0.supplierID == supplierID }
+            filtered = filtered.filter { $0.supplierId == supplierID }
         }
         
         // 日期范围筛选
@@ -247,17 +258,48 @@ class PurchaseViewModel: ObservableObject {
     
     /// 计算成本
     private func calculateCosts() async {
+        let records = filteredRecords
+        totalCost = records.reduce(0) { $0 + $1.totalCost }
+        
         do {
-            // 计算总成本
-            totalCost = try await repository.calculateTotalCost(for: filteredRecords)
+            let ingredientIds = Set(records.map { $0.ingredientId })
+            var ingredientMap: [UUID: Ingredient] = [:]
             
-            // 按类别计算成本
-            costByCategory = try await repository.calculateCostByCategory(for: filteredRecords, ingredientRepository: ingredientRepository)
+            for id in ingredientIds {
+                if let ingredient = try await ingredientRepository.fetch(by: id) {
+                    ingredientMap[id] = ingredient
+                }
+            }
             
-            // 按供应商计算成本
-            costBySupplier = try await repository.calculateCostBySupplier(for: filteredRecords)
+            var categoryTotals: [Category: Double] = [:]
+            for record in records {
+                if let ingredient = ingredientMap[record.ingredientId] {
+                    categoryTotals[ingredient.category, default: 0] += record.totalCost
+                }
+            }
+            costByCategory = categoryTotals
+            
+            var supplierTotals: [UUID: Double] = [:]
+            for record in records {
+                supplierTotals[record.supplierId, default: 0] += record.totalCost
+            }
+            costBySupplier = supplierTotals
         } catch {
             errorMessage = "计算成本失败: \(error.localizedDescription)"
         }
+    }
+    
+    private func buildCriteria() -> PurchaseRecordQueryCriteria {
+        var criteria = PurchaseRecordQueryCriteria()
+        if let ingredientID = selectedIngredientID {
+            criteria.ingredientIds = [ingredientID]
+        }
+        if let supplierID = selectedSupplierID {
+            criteria.supplierIds = [supplierID]
+        }
+        if let start = startDate, let end = endDate {
+            criteria.dateRange = start...end
+        }
+        return criteria
     }
 }

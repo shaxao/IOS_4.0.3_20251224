@@ -382,7 +382,7 @@ typedef void (^JCSDKCACHE_STATE)        (JCSDKCacheStatus status)       ;
 
  @return 返回生成的预览图像，如果生成失败则返回 nil。
  */
-+ (UIImage *)generatePrintPreviewImage:(NSString*)generatePrintPreviewImageJson displayMultiple:(float)displayMultiple printMultiple:(float)printMultiple printPreviewImageType:(int)printPreviewImageType error:(NSError **)error;
++ (nullable UIImage *)generatePrintPreviewImage:(nonnull NSString*)generatePrintPreviewImageJson displayMultiple:(float)displayMultiple printMultiple:(float)printMultiple printPreviewImageType:(int)printPreviewImageType error:(NSError * _Nullable * _Nullable)error;
 
 
 /**
@@ -776,7 +776,7 @@ withImageProcessingValue:(float)imageProcessingValue;
 
  @return 返回生成的标签数据的 JSON 字符串。
  */
-+(NSString *)GenerateLableJson;
++(nonnull NSString *)GenerateLableJson;
 
 
 /**
@@ -789,7 +789,7 @@ withImageProcessingValue:(float)imageProcessingValue;
 
  @return 返回生成的标签预览图像。
  */
-+(UIImage *)generateImagePreviewImage:(float)displayScale error:(NSError **)error;
++(nullable UIImage *)generateImagePreviewImage:(float)displayScale error:(NSError * _Nullable * _Nullable)error;
 
 
 /**
@@ -822,4 +822,3 @@ withOnePageNumbers:(int)onePageNumbers
   withComplete:(nullable DidPrinted_Block)completion;
 
 @end
-

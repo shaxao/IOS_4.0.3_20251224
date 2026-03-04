@@ -56,7 +56,7 @@ struct ScannerView: View {
                                 .font(.title2)
                                 .fontWeight(.bold)
                             
-                            Text("\(ingredient.currentQuantity.formatted()) \(ingredient.unit)")
+                            Text("\(ingredient.quantity.formatted()) \(ingredient.unit)")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                             

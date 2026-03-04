@@ -1,1 +1,6 @@
 /IOS_4.0.3_20251224
+/storage/*.key
+/vendor
+.env
+.env.backup
+.phpunit.result.cache

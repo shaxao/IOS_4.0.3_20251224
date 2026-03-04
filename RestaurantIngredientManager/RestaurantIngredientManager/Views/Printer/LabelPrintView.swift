@@ -37,17 +37,15 @@ struct LabelPrintView: View {
                 HStack {
                     Text("数量")
                     Spacer()
-                    Text("\(ingredient.currentQuantity.formatted()) \(ingredient.unit)")
+                    Text("\(ingredient.quantity.formatted()) \(ingredient.unit)")
                         .foregroundColor(.secondary)
                 }
                 
-                if let expiryDate = ingredient.expiryDate {
-                    HStack {
-                        Text("保质期")
-                        Spacer()
-                        Text(expiryDate, style: .date)
-                            .foregroundColor(.secondary)
-                    }
+                HStack {
+                    Text("保质期")
+                    Spacer()
+                    Text(ingredient.expirationDate, style: .date)
+                        .foregroundColor(.secondary)
                 }
             }
             
@@ -183,8 +181,8 @@ struct LabelPrintView: View {
         [
             "name": ingredient.name,
             "category": ingredient.category.rawValue,
-            "quantity": "\(ingredient.currentQuantity.formatted()) \(ingredient.unit)",
-            "expiryDate": ingredient.expiryDate?.formatted(date: .abbreviated, time: .omitted) ?? "无",
+            "quantity": "\(ingredient.quantity.formatted()) \(ingredient.unit)",
+            "expiryDate": ingredient.expirationDate.formatted(date: .abbreviated, time: .omitted),
             "barcode": ingredient.barcode ?? ingredient.id.uuidString,
             "qrData": ingredient.id.uuidString
         ]
@@ -196,10 +194,11 @@ struct LabelPrintView: View {
         LabelPrintView(ingredient: Ingredient(
             name: "鸡胸肉",
             category: .meat,
-            currentQuantity: 5,
+            quantity: 5,
             unit: "kg",
-            minimumStock: 2,
-            expiryDate: Date().addingTimeInterval(86400 * 7)
+            expirationDate: Date().addingTimeInterval(86400 * 7),
+            storageLocation: StorageLocation(name: "冷藏区", type: .refrigerator),
+            minimumStockThreshold: 2
         ))
     }
 }
