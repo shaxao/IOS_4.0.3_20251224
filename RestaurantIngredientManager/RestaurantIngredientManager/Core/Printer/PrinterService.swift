@@ -394,12 +394,12 @@ class PrinterService: PrinterServiceProtocol {
             if dataValue.isEmpty {
                 return
             }
-            let drewQRCode = JCAPI.drawLableQrCode(
-                x, withY: y,
-                withWidth: width, withHeight: height,
-                with: dataValue,
-                withRotate: 0,
-                withCodeType: 31 // QR_CODE
+            let drewQRCode = drawQRCodeWithFallback(
+                x: x,
+                y: y,
+                width: width,
+                height: height,
+                content: dataValue
             )
             if !drewQRCode {
                 throw PrinterServiceError.printFailed("二维码绘制失败")
@@ -414,16 +414,13 @@ class PrinterService: PrinterServiceProtocol {
             if dataValue.isEmpty {
                 return
             }
-            let fontSize = Float(element.fontSize ?? 3)
-            let drewBarcode = JCAPI.drawLableBarCode(
-                x, withY: y,
-                withWidth: width, withHeight: height,
-                with: dataValue,
-                withFontSize: fontSize,
-                withRotate: 0,
-                withCodeType: 20, // CODE128
-                withTextHeight: 5,
-                withTextPosition: 0
+            let drewBarcode = drawBarcodeWithFallback(
+                x: x,
+                y: y,
+                width: width,
+                height: height,
+                content: dataValue,
+                fontSize: Float(element.fontSize ?? 3)
             )
             if !drewBarcode {
                 throw PrinterServiceError.printFailed("条码绘制失败")
@@ -551,6 +548,80 @@ class PrinterService: PrinterServiceProtocol {
             }
         }
         return false
+    }
+
+    private func drawQRCodeWithFallback(
+        x: Float,
+        y: Float,
+        width: Float,
+        height: Float,
+        content: String
+    ) -> Bool {
+        let safeWidth = max(width, 14)
+        let safeHeight = max(height, 14)
+        let candidates = [
+            content,
+            String(content.prefix(64)),
+            String(content.prefix(32))
+        ]
+        let codeTypes = [31, 33]
+        for value in candidates where !value.isEmpty {
+            for codeType in codeTypes {
+                let success = JCAPI.drawLableQrCode(
+                    x, withY: y,
+                    withWidth: safeWidth, withHeight: safeHeight,
+                    with: value,
+                    withRotate: 0,
+                    withCodeType: Int32(codeType)
+                )
+                if success {
+                    return true
+                }
+            }
+        }
+        return drawLabelTextWithFallback(
+            x: x,
+            y: y,
+            width: max(width, 18),
+            height: max(height, 8),
+            text: content,
+            fontSize: 8
+        )
+    }
+
+    private func drawBarcodeWithFallback(
+        x: Float,
+        y: Float,
+        width: Float,
+        height: Float,
+        content: String,
+        fontSize: Float
+    ) -> Bool {
+        let normalized = content.replacingOccurrences(of: " ", with: "")
+        let candidates = [normalized, String(normalized.prefix(32)), String(normalized.prefix(18))]
+        for value in candidates where !value.isEmpty {
+            let success = JCAPI.drawLableBarCode(
+                x, withY: y,
+                withWidth: max(width, 24), withHeight: max(height, 12),
+                with: value,
+                withFontSize: max(fontSize, 3),
+                withRotate: 0,
+                withCodeType: 20,
+                withTextHeight: 5,
+                withTextPosition: 0
+            )
+            if success {
+                return true
+            }
+        }
+        return drawLabelTextWithFallback(
+            x: x,
+            y: y,
+            width: max(width, 18),
+            height: max(height, 8),
+            text: content,
+            fontSize: 8
+        )
     }
 
     private func parseIntValue(_ raw: Any?) -> Int? {
