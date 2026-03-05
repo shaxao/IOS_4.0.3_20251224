@@ -277,9 +277,9 @@ class PrinterService: PrinterServiceProtocol {
         // 设置打印份数
         JCAPI.setTotalQuantityOfPrints(1)
 
-        try await withThrowingTaskGroup(of: Void.self) { group in
+        let printSuccess = try await withThrowingTaskGroup(of: Bool.self) { group in
             group.addTask {
-                let printSuccess = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Bool, Error>) in
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Bool, Error>) in
                     var resumed = false
                     let resolve: (Result<Bool, Error>) -> Void = { result in
                         guard !resumed else { return }
@@ -299,35 +299,28 @@ class PrinterService: PrinterServiceProtocol {
                         }
                     }
 
-                    JCAPI.startJob(3, withPaperStyle: 1) { success in
-                        if !success {
-                            resolve(.failure(PrinterServiceError.printFailed("开始打印任务失败")))
-                        }
+                    JCAPI.cancelJob(nil)
+                    JCAPI.setPrintWithCache(false)
+                    JCAPI.startJob(3, withPaperStyle: 1, withCompletion: nil)
+                    JCAPI.commit(printJson, withOnePageNumbers: 1, withComplete: nil)
+                    JCAPI.endPrint { endSuccess in
+                        resolve(.success(endSuccess))
                     }
-
-                    JCAPI.commit(printJson, withOnePageNumbers: 1) { commitSuccess in
-                        guard commitSuccess else {
-                            resolve(.failure(PrinterServiceError.printFailed("提交打印数据失败")))
-                            return
-                        }
-                        JCAPI.endPrint { endSuccess in
-                            resolve(.success(endSuccess))
-                        }
-                    }
-                }
-
-                if !printSuccess {
-                    throw PrinterServiceError.printFailed("打印失败")
                 }
             }
 
             group.addTask {
-                try await Task.sleep(nanoseconds: 15_000_000_000)
+                try await Task.sleep(nanoseconds: 20_000_000_000)
                 throw PrinterServiceError.printFailed("打印超时，请检查打印机状态并重新配对")
             }
 
-            _ = try await group.next()
+            let value = try await group.next() ?? false
             group.cancelAll()
+            return value
+        }
+
+        if !printSuccess {
+            throw PrinterServiceError.printFailed("打印机未返回成功")
         }
     }
     
@@ -386,7 +379,7 @@ class PrinterService: PrinterServiceProtocol {
                 return
             }
             let fontSize = Float(element.fontSize ?? 12)
-            JCAPI.drawLableText(
+            let drewText = JCAPI.drawLableText(
                 x, withY: y,
                 withWidth: width, withHeight: height,
                 with: dataValue,
@@ -400,6 +393,9 @@ class PrinterService: PrinterServiceProtocol {
                 withLineSpacing: 0,
                 withFontStyle: [0, 0, 0, 0]
             )
+            if !drewText {
+                throw PrinterServiceError.printFailed("文本绘制失败")
+            }
             
         case .qrCode:
             guard let content = element.content else {
@@ -410,13 +406,16 @@ class PrinterService: PrinterServiceProtocol {
             if dataValue.isEmpty {
                 return
             }
-            JCAPI.drawLableQrCode(
+            let drewQRCode = JCAPI.drawLableQrCode(
                 x, withY: y,
                 withWidth: width, withHeight: height,
                 with: dataValue,
                 withRotate: 0,
                 withCodeType: 31 // QR_CODE
             )
+            if !drewQRCode {
+                throw PrinterServiceError.printFailed("二维码绘制失败")
+            }
             
         case .barcode:
             guard let content = element.content else {
@@ -428,7 +427,7 @@ class PrinterService: PrinterServiceProtocol {
                 return
             }
             let fontSize = Float(element.fontSize ?? 3)
-            JCAPI.drawLableBarCode(
+            let drewBarcode = JCAPI.drawLableBarCode(
                 x, withY: y,
                 withWidth: width, withHeight: height,
                 with: dataValue,
@@ -438,6 +437,9 @@ class PrinterService: PrinterServiceProtocol {
                 withTextHeight: 5,
                 withTextPosition: 0
             )
+            if !drewBarcode {
+                throw PrinterServiceError.printFailed("条码绘制失败")
+            }
             
         case .line:
             JCAPI.drawLableLine(

@@ -25,9 +25,30 @@ class PrinterSDKManager {
             print("精臣打印机SDK已经初始化")
             return
         }
-        
-        // TODO: 在后续任务中集成实际的JCAPI框架
-        // JCManager.shared().initSDK()
+
+        let fm = FileManager.default
+        let documents = fm.urls(for: .documentDirectory, in: .userDomainMask).first
+        let fontDirectory = documents?.appendingPathComponent("font", isDirectory: true)
+        if let fontDirectory {
+            try? fm.createDirectory(at: fontDirectory, withIntermediateDirectories: true)
+            if let bundleFont1 = Bundle.main.url(forResource: "ZT001", withExtension: "ttf") {
+                let target = fontDirectory.appendingPathComponent("ZT001.ttf")
+                if !fm.fileExists(atPath: target.path) {
+                    try? fm.copyItem(at: bundleFont1, to: target)
+                }
+            }
+            if let bundleFont2 = Bundle.main.url(forResource: "ZT002", withExtension: "otf") {
+                let target = fontDirectory.appendingPathComponent("ZT002.otf")
+                if !fm.fileExists(atPath: target.path) {
+                    try? fm.copyItem(at: bundleFont2, to: target)
+                }
+            }
+            var error: NSError?
+            JCAPI.initImageProcessing(fontDirectory.path, error: &error)
+            if let error {
+                print("精臣打印字体初始化失败: \(error.localizedDescription)")
+            }
+        }
         
         isInitialized = true
         print("精臣打印机SDK初始化成功")
