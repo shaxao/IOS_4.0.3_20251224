@@ -373,19 +373,13 @@ class PrinterService: PrinterServiceProtocol {
                 return
             }
             let fontSize = Float(element.fontSize ?? 12)
-            let drewText = JCAPI.drawLableText(
-                x, withY: y,
-                withWidth: width, withHeight: height,
-                with: dataValue,
-                withFontFamily: "ZT001",
-                withFontSize: fontSize,
-                withRotate: 0,
-                withTextAlignHorizonral: 0,
-                withTextAlignVertical: 0,
-                withLineMode: 0,
-                withLetterSpacing: 0,
-                withLineSpacing: 0,
-                withFontStyle: [0, 0, 0, 0]
+            let drewText = drawLabelTextWithFallback(
+                x: x,
+                y: y,
+                width: width,
+                height: height,
+                text: dataValue,
+                fontSize: fontSize
             )
             if !drewText {
                 throw PrinterServiceError.printFailed("文本绘制失败")
@@ -526,6 +520,37 @@ class PrinterService: PrinterServiceProtocol {
             group.cancelAll()
             return value
         }
+    }
+
+    private func drawLabelTextWithFallback(
+        x: Float,
+        y: Float,
+        width: Float,
+        height: Float,
+        text: String,
+        fontSize: Float
+    ) -> Bool {
+        let fontFamilies = ["ZT001", "PingFang SC", "Helvetica", ""]
+        for fontFamily in fontFamilies {
+            let success = JCAPI.drawLableText(
+                x, withY: y,
+                withWidth: width, withHeight: height,
+                with: text,
+                withFontFamily: fontFamily,
+                withFontSize: fontSize,
+                withRotate: 0,
+                withTextAlignHorizonral: 0,
+                withTextAlignVertical: 0,
+                withLineMode: 0,
+                withLetterSpacing: 0,
+                withLineSpacing: 0,
+                withFontStyle: [0, 0, 0, 0]
+            )
+            if success {
+                return true
+            }
+        }
+        return false
     }
 
     private func parseIntValue(_ raw: Any?) -> Int? {
