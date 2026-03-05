@@ -18,7 +18,8 @@ final class IngredientCategoryProfileStore: ObservableObject {
         if let data = defaults.data(forKey: profilesKey),
            let decoded = try? JSONDecoder().decode([IngredientCategoryProfile].self, from: data),
            !decoded.isEmpty {
-            profiles = decoded
+            profiles = decoded.map(normalize)
+            persist()
             return
         }
 
@@ -31,10 +32,11 @@ final class IngredientCategoryProfileStore: ObservableObject {
     }
 
     func upsert(_ profile: IngredientCategoryProfile) {
+        let normalizedProfile = normalize(profile)
         if let index = profiles.firstIndex(where: { $0.id == profile.id }) {
-            profiles[index] = profile
+            profiles[index] = normalizedProfile
         } else {
-            profiles.append(profile)
+            profiles.append(normalizedProfile)
         }
         persist()
     }
@@ -71,5 +73,30 @@ final class IngredientCategoryProfileStore: ObservableObject {
         if let encoded = try? JSONEncoder().encode(profiles) {
             defaults.set(encoded, forKey: profilesKey)
         }
+    }
+
+    private func normalize(_ profile: IngredientCategoryProfile) -> IngredientCategoryProfile {
+        var normalized = profile
+        let existingByKey = Dictionary(uniqueKeysWithValues: normalized.fields.map { ($0.key, $0) })
+        let merged = IngredientCategoryProfile.defaultFields.map { defaultField -> IngredientFieldDefinition in
+            if var existing = existingByKey[defaultField.key] {
+                existing.kind = IngredientFieldDefinition.defaultKind(for: existing.key)
+                return existing
+            }
+            return defaultField
+        }
+        normalized.fields = merged
+
+        let useEnabled = merged.first(where: { $0.key == .useTime })?.enabled ?? false
+        let expEnabled = merged.first(where: { $0.key == .expTime })?.enabled ?? false
+        if useEnabled || expEnabled {
+            if let thawIndex = normalized.fields.firstIndex(where: { $0.key == .thawTime }) {
+                normalized.fields[thawIndex].enabled = true
+            }
+            if let preserveIndex = normalized.fields.firstIndex(where: { $0.key == .preserveTime }) {
+                normalized.fields[preserveIndex].enabled = true
+            }
+        }
+        return normalized
     }
 }

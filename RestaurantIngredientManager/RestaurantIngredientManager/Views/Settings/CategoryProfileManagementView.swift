@@ -146,6 +146,12 @@ struct CategoryProfileEditorView: View {
                     Toggle("加粗", isOn: $blocks[index].isBold)
                     Toggle("斜体", isOn: $blocks[index].isItalic)
                     ColorPicker("颜色", selection: $blocks[index].color)
+                    Button("删除选中框") {
+                        let id = blocks[index].id
+                        blocks.removeAll(where: { $0.id == id })
+                        selectedBlockID = nil
+                    }
+                    .foregroundColor(.red)
                 }
             }
 
