@@ -300,50 +300,40 @@ class PrinterService: PrinterServiceProtocol {
         // 设置打印份数
         JCAPI.setTotalQuantityOfPrints(1)
 
-        let printSuccess = try await withThrowingTaskGroup(of: Bool.self) { group in
-            group.addTask {
-                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Bool, Error>) in
-                    var resumed = false
-                    let resolve: (Result<Bool, Error>) -> Void = { result in
-                        guard !resumed else { return }
-                        resumed = true
-                        switch result {
-                        case .success(let value):
-                            continuation.resume(returning: value)
-                        case .failure(let error):
-                            continuation.resume(throwing: error)
-                        }
-                    }
-
-                    JCAPI.getPrintingErrorInfo { errorCode in
-                        if let code = errorCode, !code.isEmpty {
-                            let errorMessage = self.parseErrorCode(code)
-                            resolve(.failure(PrinterServiceError.printFailed(errorMessage)))
-                        }
-                    }
-
-                    JCAPI.cancelJob(nil)
-                    JCAPI.setPrintWithCache(false)
-                    JCAPI.startJob(3, withPaperStyle: 1, withCompletion: nil)
-                    JCAPI.commit(printJson, withOnePageNumbers: 1, withComplete: nil)
-                    JCAPI.endPrint { endSuccess in
-                        resolve(.success(endSuccess))
-                    }
-                }
+        var sdkError: String?
+        JCAPI.getPrintingErrorInfo { errorCode in
+            if let code = errorCode, !code.isEmpty {
+                sdkError = self.parseErrorCode(code)
             }
+        }
+        JCAPI.cancelJob(nil)
+        JCAPI.setPrintWithCache(false)
 
-            group.addTask {
-                try await Task.sleep(nanoseconds: 20_000_000_000)
-                throw PrinterServiceError.printFailed("打印超时，请检查打印机状态并重新配对")
+        let startSuccess = try await awaitBoolResult(timeoutSeconds: 8) { done in
+            JCAPI.startJob(3, withPaperStyle: 1) { success in
+                done(success)
             }
-
-            let value = try await group.next() ?? false
-            group.cancelAll()
-            return value
+        }
+        if !startSuccess {
+            throw PrinterServiceError.printFailed(sdkError ?? "开始打印任务失败")
         }
 
-        if !printSuccess {
-            throw PrinterServiceError.printFailed("打印机未返回成功")
+        let commitSuccess = try await awaitBoolResult(timeoutSeconds: 10) { done in
+            JCAPI.commit(printJson, withOnePageNumbers: 1) { success in
+                done(success)
+            }
+        }
+        if !commitSuccess {
+            throw PrinterServiceError.printFailed(sdkError ?? "提交打印数据失败")
+        }
+
+        let endSuccess = try await awaitBoolResult(timeoutSeconds: 10) { done in
+            JCAPI.endPrint { success in
+                done(success)
+            }
+        }
+        if !endSuccess {
+            throw PrinterServiceError.printFailed(sdkError ?? "结束打印失败")
         }
     }
     
@@ -530,6 +520,30 @@ class PrinterService: PrinterServiceProtocol {
         case "50": return "设备忙碌，请稍后重试"
         case "51": return "通信超时，请检查连接"
         default: return "未知错误（代码：\(code)）"
+        }
+    }
+
+    private func awaitBoolResult(timeoutSeconds: UInt64, operation: @escaping (@escaping (Bool) -> Void) -> Void) async throws -> Bool {
+        try await withThrowingTaskGroup(of: Bool.self) { group in
+            group.addTask {
+                await withCheckedContinuation { (continuation: CheckedContinuation<Bool, Never>) in
+                    var resumed = false
+                    operation { success in
+                        guard !resumed else { return }
+                        resumed = true
+                        continuation.resume(returning: success)
+                    }
+                }
+            }
+
+            group.addTask {
+                try await Task.sleep(nanoseconds: timeoutSeconds * 1_000_000_000)
+                throw PrinterServiceError.printFailed("打印超时，请检查打印机状态并重新配对")
+            }
+
+            let value = try await group.next() ?? false
+            group.cancelAll()
+            return value
         }
     }
 
