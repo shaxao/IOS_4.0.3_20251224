@@ -199,44 +199,67 @@ class PrinterService: PrinterServiceProtocol {
         guard connectedPrinter != nil else {
             throw PrinterServiceError.notConnected
         }
-        
-        return try await withCheckedThrowingContinuation { continuation in
-            let supported = JCAPI.getPrintStatusChange { statusInfo in
-                guard let info = statusInfo as? [String: Any] else {
-                    continuation.resume(throwing: PrinterServiceError.statusQueryFailed("无效的状态信息"))
-                    return
+
+        var fallback = currentStatus
+        fallback.isConnected = JCAPI.isConnectingState() != 0
+        fallback.lastErrorMessage = nil
+
+        let status = try await withThrowingTaskGroup(of: PrinterStatus.self) { group in
+            group.addTask {
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<PrinterStatus, Error>) in
+                    var resumed = false
+                    let resolve: (Result<PrinterStatus, Error>) -> Void = { result in
+                        guard !resumed else { return }
+                        resumed = true
+                        switch result {
+                        case .success(let value):
+                            continuation.resume(returning: value)
+                        case .failure(let error):
+                            continuation.resume(throwing: error)
+                        }
+                    }
+
+                    let supported = JCAPI.getPrintStatusChange { statusInfo in
+                        guard let info = statusInfo as? [String: Any] else {
+                            resolve(.failure(PrinterServiceError.statusQueryFailed("无效的状态信息")))
+                            return
+                        }
+
+                        var status = fallback
+
+                        if let coverInt = self.parseIntValue(info["1"]) {
+                            status.coverStatus = coverInt == 1 ? .closed : .open
+                        }
+                        if let batteryLevel = self.parseIntValue(info["2"]) {
+                            status.batteryLevel = batteryLevel * 25
+                        }
+                        if let paperInt = self.parseIntValue(info["3"]) {
+                            status.paperStatus = paperInt == 1 ? .normal : .out
+                        }
+                        status.isConnected = JCAPI.isConnectingState() != 0
+
+                        resolve(.success(status))
+                    }
+
+                    if !supported {
+                        resolve(.failure(PrinterServiceError.statusQueryFailed("打印机不支持状态监听")))
+                    }
                 }
-                
-                var status = PrinterStatus()
-                status.isConnected = true
-                status.lastErrorMessage = nil
-                
-                // 解析盖子状态 (0=打开, 1=关闭)
-                if let coverValue = info["1"] as? String, let coverInt = Int(coverValue) {
-                    status.coverStatus = coverInt == 1 ? .closed : .open
-                }
-                
-                // 解析电量等级 (1-4)
-                if let batteryValue = info["2"] as? String, let batteryLevel = Int(batteryValue) {
-                    // 将1-4转换为百分比
-                    status.batteryLevel = batteryLevel * 25
-                }
-                
-                // 解析纸张状态 (0=没有, 1=有)
-                if let paperValue = info["3"] as? String, let paperInt = Int(paperValue) {
-                    status.paperStatus = paperInt == 1 ? .normal : .out
-                }
-                
-                self.currentStatus = status
-                self.statusSubject.send(status)
-                
-                continuation.resume(returning: status)
             }
-            
-            if !supported {
-                continuation.resume(throwing: PrinterServiceError.statusQueryFailed("打印机不支持状态查询"))
+
+            group.addTask {
+                try await Task.sleep(nanoseconds: 1_200_000_000)
+                return fallback
             }
+
+            let value = try await group.next() ?? fallback
+            group.cancelAll()
+            return value
         }
+
+        currentStatus = status
+        statusSubject.send(status)
+        return status
     }
     
     /// 打印标签
@@ -509,6 +532,20 @@ class PrinterService: PrinterServiceProtocol {
         default: return "未知错误（代码：\(code)）"
         }
     }
+
+    private func parseIntValue(_ raw: Any?) -> Int? {
+        if let value = raw as? Int {
+            return value
+        }
+        if let value = raw as? NSNumber {
+            return value.intValue
+        }
+        if let text = raw as? String {
+            return Int(text)
+        }
+        return nil
+    }
+
 
     private func normalizePlaceholder(_ raw: String) -> String {
         raw.replacingOccurrences(of: "{{", with: "").replacingOccurrences(of: "}}", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
