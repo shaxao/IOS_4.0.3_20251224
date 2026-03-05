@@ -78,6 +78,7 @@ class PrinterService: PrinterServiceProtocol {
     
     /// 是否正在监听状态变化
     private var isMonitoringStatus = false
+    private var statusListenerRegistered = false
     
     // MARK: - Initialization
     
@@ -192,6 +193,7 @@ class PrinterService: PrinterServiceProtocol {
         currentStatus = PrinterStatus()
         statusSubject.send(currentStatus)
         isMonitoringStatus = false
+        statusListenerRegistered = false
     }
     
     /// 获取打印机状态
@@ -199,64 +201,9 @@ class PrinterService: PrinterServiceProtocol {
         guard connectedPrinter != nil else {
             throw PrinterServiceError.notConnected
         }
-
-        var fallback = currentStatus
-        fallback.isConnected = JCAPI.isConnectingState() != 0
-        fallback.lastErrorMessage = nil
-
-        let status = try await withThrowingTaskGroup(of: PrinterStatus.self) { group in
-            group.addTask {
-                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<PrinterStatus, Error>) in
-                    var resumed = false
-                    let resolve: (Result<PrinterStatus, Error>) -> Void = { result in
-                        guard !resumed else { return }
-                        resumed = true
-                        switch result {
-                        case .success(let value):
-                            continuation.resume(returning: value)
-                        case .failure(let error):
-                            continuation.resume(throwing: error)
-                        }
-                    }
-
-                    let supported = JCAPI.getPrintStatusChange { statusInfo in
-                        guard let info = statusInfo as? [String: Any] else {
-                            resolve(.failure(PrinterServiceError.statusQueryFailed("无效的状态信息")))
-                            return
-                        }
-
-                        var status = fallback
-
-                        if let coverInt = self.parseIntValue(info["1"]) {
-                            status.coverStatus = coverInt == 1 ? .closed : .open
-                        }
-                        if let batteryLevel = self.parseIntValue(info["2"]) {
-                            status.batteryLevel = batteryLevel * 25
-                        }
-                        if let paperInt = self.parseIntValue(info["3"]) {
-                            status.paperStatus = paperInt == 1 ? .normal : .out
-                        }
-                        status.isConnected = JCAPI.isConnectingState() != 0
-
-                        resolve(.success(status))
-                    }
-
-                    if !supported {
-                        resolve(.failure(PrinterServiceError.statusQueryFailed("打印机不支持状态监听")))
-                    }
-                }
-            }
-
-            group.addTask {
-                try await Task.sleep(nanoseconds: 1_200_000_000)
-                return fallback
-            }
-
-            let value = try await group.next() ?? fallback
-            group.cancelAll()
-            return value
-        }
-
+        var status = currentStatus
+        status.isConnected = JCAPI.isConnectingState() != 0
+        status.lastErrorMessage = nil
         currentStatus = status
         statusSubject.send(status)
         return status
@@ -309,9 +256,17 @@ class PrinterService: PrinterServiceProtocol {
         JCAPI.cancelJob(nil)
         JCAPI.setPrintWithCache(false)
 
-        let startSuccess = try await awaitBoolResult(timeoutSeconds: 8) { done in
-            JCAPI.startJob(3, withPaperStyle: 1) { success in
-                done(success)
+        let paperStyles = [1, 2, 3]
+        var startSuccess = false
+        for paperStyle in paperStyles {
+            let started = try await awaitBoolResult(timeoutSeconds: 8) { done in
+                JCAPI.startJob(3, withPaperStyle: Int32(paperStyle)) { success in
+                    done(success)
+                }
+            }
+            if started {
+                startSuccess = true
+                break
             }
         }
         if !startSuccess {
@@ -364,6 +319,7 @@ class PrinterService: PrinterServiceProtocol {
     private func startMonitoringStatus() {
         guard !isMonitoringStatus else { return }
         isMonitoringStatus = true
+        registerStatusListenerIfNeeded()
         
         // 持续监听状态变化
         Task {
@@ -371,6 +327,31 @@ class PrinterService: PrinterServiceProtocol {
                 try? await Task.sleep(nanoseconds: 2_000_000_000) // 每2秒查询一次
                 try? await getPrinterStatus()
             }
+        }
+    }
+
+    private func registerStatusListenerIfNeeded() {
+        guard !statusListenerRegistered else { return }
+        statusListenerRegistered = true
+        let supported = JCAPI.getPrintStatusChange { [weak self] statusInfo in
+            guard let self else { return }
+            guard let info = statusInfo as? [String: Any] else { return }
+            var status = self.currentStatus
+            if let coverInt = self.parseIntValue(info["1"]) {
+                status.coverStatus = coverInt == 1 ? .closed : .open
+            }
+            if let batteryLevel = self.parseIntValue(info["2"]) {
+                status.batteryLevel = batteryLevel * 25
+            }
+            if let paperInt = self.parseIntValue(info["3"]) {
+                status.paperStatus = paperInt == 1 ? .normal : .out
+            }
+            status.isConnected = JCAPI.isConnectingState() != 0
+            self.currentStatus = status
+            self.statusSubject.send(status)
+        }
+        if !supported {
+            statusListenerRegistered = false
         }
     }
     
