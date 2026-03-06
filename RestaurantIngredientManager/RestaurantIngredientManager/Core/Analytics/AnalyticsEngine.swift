@@ -97,7 +97,7 @@ class AnalyticsEngine: ObservableObject {
             progress = 0.0
         }
         
-        let ingredients = try ingredientRepository.fetchAll()
+        let ingredients = try await ingredientRepository.fetchAll()
         await MainActor.run {
             progress = 0.3
         }
@@ -157,7 +157,7 @@ class AnalyticsEngine: ObservableObject {
         }
         
         let range = timeRange.dateRange
-        let records = try purchaseRepository.fetchAll().filter { record in
+        let records = try await purchaseRepository.fetchAll().filter { record in
             record.purchaseDate >= range.start && record.purchaseDate <= range.end
         }
         await MainActor.run {
@@ -217,7 +217,7 @@ class AnalyticsEngine: ObservableObject {
             progress = 0.0
         }
         
-        let ingredients = try ingredientRepository.fetchAll()
+        let ingredients = try await ingredientRepository.fetchAll()
         await MainActor.run {
             progress = 0.3
         }
@@ -276,7 +276,7 @@ class AnalyticsEngine: ObservableObject {
         }
         
         let range = timeRange.dateRange
-        let records = try purchaseRepository.fetchAll().filter { record in
+        let records = try await purchaseRepository.fetchAll().filter { record in
             record.purchaseDate >= range.start && record.purchaseDate <= range.end
         }
         await MainActor.run {

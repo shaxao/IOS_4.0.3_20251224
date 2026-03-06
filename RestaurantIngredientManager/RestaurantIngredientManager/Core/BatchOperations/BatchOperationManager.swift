@@ -54,7 +54,7 @@ class BatchOperationManager {
         
         for (index, ingredient) in ingredients.enumerated() {
             do {
-                try repository.delete(ingredient)
+                try await repository.delete(ingredient)
                 successCount += 1
             } catch {
                 failureCount += 1
@@ -102,7 +102,7 @@ class BatchOperationManager {
         for (index, var ingredient) in ingredients.enumerated() {
             do {
                 ingredient.category = newCategory
-                try repository.update(ingredient)
+                try await repository.update(ingredient)
                 successCount += 1
             } catch {
                 failureCount += 1
@@ -147,7 +147,7 @@ class BatchOperationManager {
         for (index, var ingredient) in ingredients.enumerated() {
             do {
                 ingredient.storageLocation = newLocation
-                try repository.update(ingredient)
+                try await repository.update(ingredient)
                 successCount += 1
             } catch {
                 failureCount += 1
