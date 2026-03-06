@@ -114,6 +114,33 @@ jobs:
         set -euo pipefail
         cd RestaurantIngredientManager
 
+    - name: Clean Build Cache
+      run: |
+        set -euo pipefail
+        echo "🧹 清理构建缓存..."
+        cd RestaurantIngredientManager
+        
+        # 清理Xcode构建缓存
+        echo "📦 清理Xcode构建产物..."
+        xcodebuild clean \
+          -project RestaurantIngredientManager.xcodeproj \
+          -scheme RestaurantIngredientManager \
+          -configuration Release || echo "⚠️ clean命令失败（可能项目尚未构建过）"
+        
+        # 删除DerivedData
+        echo "🗑️  删除DerivedData..."
+        rm -rf ~/Library/Developer/Xcode/DerivedData/RestaurantIngredientManager-* || true
+        
+        # 删除ModuleCache
+        echo "🗑️  删除ModuleCache..."
+        rm -rf ~/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/* || true
+        
+        # 删除本地build文件夹
+        echo "🗑️  删除本地build文件夹..."
+        rm -rf build/ || true
+        
+        echo "✅ 缓存清理完成"
+
     - name: Build project
       run: |
         set -euo pipefail
