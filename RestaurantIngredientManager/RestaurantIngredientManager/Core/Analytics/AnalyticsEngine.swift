@@ -108,13 +108,17 @@ class AnalyticsEngine: ObservableObject {
         let lowStockItems = ingredients.filter { $0.quantity <= $0.minimumStockThreshold }
         let expiredItems = ingredients.filter { $0.expirationDate < Date() }
         
-        progress = 0.6
+        await MainActor.run {
+            progress = 0.6
+        }
         
         // 按类别统计
         let categoryStats = Dictionary(grouping: ingredients, by: { $0.category })
             .mapValues { $0.count }
         
-        progress = 0.9
+        await MainActor.run {
+            progress = 0.9
+        }
         
         let data: [String: Any] = [
             "totalItems": totalItems,
@@ -165,7 +169,9 @@ class AnalyticsEngine: ObservableObject {
         let totalCost = records.reduce(0.0) { $0 + $1.totalCost }
         let averageCost = totalCost / Double(max(totalPurchases, 1))
         
-        progress = 0.6
+        await MainActor.run {
+            progress = 0.6
+        }
         
         // 按供应商统计
         let supplierStats = Dictionary(grouping: records, by: { $0.supplierId })
@@ -173,7 +179,9 @@ class AnalyticsEngine: ObservableObject {
                 records.reduce(0.0) { $0 + $1.totalCost }
             }
         
-        progress = 0.9
+        await MainActor.run {
+            progress = 0.9
+        }
         
         let data: [String: Any] = [
             "totalPurchases": totalPurchases,
@@ -228,7 +236,9 @@ class AnalyticsEngine: ObservableObject {
             return daysUntil > 7 && daysUntil <= 30
         }
         
-        progress = 0.9
+        await MainActor.run {
+            progress = 0.9
+        }
         
         let data: [String: Any] = [
             "expired": expired.count,
@@ -281,7 +291,9 @@ class AnalyticsEngine: ObservableObject {
             records.reduce(0.0) { $0 + $1.totalCost }
         }
         
-        progress = 0.6
+        await MainActor.run {
+            progress = 0.6
+        }
         
         // 计算趋势
         let sortedMonths = monthlyData.keys.sorted()
@@ -298,7 +310,9 @@ class AnalyticsEngine: ObservableObject {
             }
         }
         
-        progress = 0.9
+        await MainActor.run {
+            progress = 0.9
+        }
         
         let data: [String: Any] = [
             "monthlyData": monthlyData,
