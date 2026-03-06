@@ -128,7 +128,7 @@ struct PieChartView: View {
     let data: [ChartDataPoint]
     
     var body: some View {
-        if #available(iOS 16.0, *) {
+        if #available(iOS 17.0, *) {
             Chart(data) { point in
                 SectorMark(
                     angle: .value("数量", point.value)
@@ -166,7 +166,7 @@ struct DonutChartView: View {
     let data: [ChartDataPoint]
     
     var body: some View {
-        if #available(iOS 16.0, *) {
+        if #available(iOS 17.0, *) {
             Chart(data) { point in
                 SectorMark(
                     angle: .value("数量", point.value),

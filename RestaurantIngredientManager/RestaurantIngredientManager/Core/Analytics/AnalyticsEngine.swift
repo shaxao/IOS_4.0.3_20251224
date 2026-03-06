@@ -98,7 +98,9 @@ class AnalyticsEngine: ObservableObject {
         }
         
         let ingredients = try ingredientRepository.fetchAll()
-        progress = 0.3
+        await MainActor.run {
+            progress = 0.3
+        }
         
         // 分析数据
         let totalItems = ingredients.count
@@ -154,7 +156,9 @@ class AnalyticsEngine: ObservableObject {
         let records = try purchaseRepository.fetchAll().filter { record in
             record.purchaseDate >= range.start && record.purchaseDate <= range.end
         }
-        progress = 0.3
+        await MainActor.run {
+            progress = 0.3
+        }
         
         // 分析数据
         let totalPurchases = records.count
@@ -206,7 +210,9 @@ class AnalyticsEngine: ObservableObject {
         }
         
         let ingredients = try ingredientRepository.fetchAll()
-        progress = 0.3
+        await MainActor.run {
+            progress = 0.3
+        }
         
         let now = Date()
         let calendar = Calendar.current
@@ -263,7 +269,9 @@ class AnalyticsEngine: ObservableObject {
         let records = try purchaseRepository.fetchAll().filter { record in
             record.purchaseDate >= range.start && record.purchaseDate <= range.end
         }
-        progress = 0.3
+        await MainActor.run {
+            progress = 0.3
+        }
         
         // 按月份分组
         let calendar = Calendar.current
