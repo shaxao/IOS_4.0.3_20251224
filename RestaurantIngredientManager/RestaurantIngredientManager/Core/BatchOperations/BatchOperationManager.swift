@@ -61,8 +61,9 @@ class BatchOperationManager {
                 errors.append(error)
             }
             
+            let currentProgress = Double(index + 1) / Double(ingredients.count)
             await MainActor.run {
-                progress = Double(index + 1) / Double(ingredients.count)
+                progress = currentProgress
             }
         }
         
@@ -108,8 +109,9 @@ class BatchOperationManager {
                 errors.append(error)
             }
             
+            let currentProgress = Double(index + 1) / Double(ingredients.count)
             await MainActor.run {
-                progress = Double(index + 1) / Double(ingredients.count)
+                progress = currentProgress
             }
         }
         
@@ -152,8 +154,9 @@ class BatchOperationManager {
                 errors.append(error)
             }
             
+            let currentProgress = Double(index + 1) / Double(ingredients.count)
             await MainActor.run {
-                progress = Double(index + 1) / Double(ingredients.count)
+                progress = currentProgress
             }
         }
         

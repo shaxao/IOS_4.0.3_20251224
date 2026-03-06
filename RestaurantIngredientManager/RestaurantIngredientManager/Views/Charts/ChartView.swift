@@ -70,9 +70,32 @@ struct BarChartView: View {
             .frame(height: 200)
             .padding()
         } else {
-            // iOS 15 fallback
-            CustomBarChart(data: data)
+            // iOS 15 fallback - 简单的条形图
+            VStack {
+                ForEach(data) { point in
+                    HStack {
+                        Text(point.label)
+                            .frame(width: 80, alignment: .leading)
+                        
+                        GeometryReader { geometry in
+                            Rectangle()
+                                .fill(point.color)
+                                .frame(width: geometry.size.width * CGFloat(point.value / maxValue))
+                        }
+                        .frame(height: 20)
+                        
+                        Text(String(format: "%.0f", point.value))
+                            .frame(width: 40, alignment: .trailing)
+                    }
+                }
+            }
+            .frame(height: 200)
+            .padding()
         }
+    }
+    
+    private var maxValue: Double {
+        data.map { $0.value }.max() ?? 1.0
     }
 }
 
@@ -92,7 +115,10 @@ struct LineChartView: View {
             .frame(height: 200)
             .padding()
         } else {
-            CustomLineChart(data: data)
+            // iOS 15 fallback - 简单的折线图
+            Text("折线图 (需要iOS 16+)")
+                .frame(height: 200)
+                .padding()
         }
     }
 }
@@ -112,8 +138,26 @@ struct PieChartView: View {
             .frame(height: 200)
             .padding()
         } else {
-            CustomPieChart(data: data)
+            // iOS 15 fallback - 简单的饼图表示
+            VStack {
+                ForEach(data) { point in
+                    HStack {
+                        Circle()
+                            .fill(point.color)
+                            .frame(width: 12, height: 12)
+                        Text(point.label)
+                        Spacer()
+                        Text(String(format: "%.1f%%", point.value / totalValue * 100))
+                    }
+                }
+            }
+            .frame(height: 200)
+            .padding()
         }
+    }
+    
+    private var totalValue: Double {
+        data.reduce(0) { $0 + $1.value }
     }
 }
 
@@ -133,7 +177,25 @@ struct DonutChartView: View {
             .frame(height: 200)
             .padding()
         } else {
-            CustomDonutChart(data: data)
+            // iOS 15 fallback - 使用饼图表示
+            VStack {
+                ForEach(data) { point in
+                    HStack {
+                        Circle()
+                            .fill(point.color)
+                            .frame(width: 12, height: 12)
+                        Text(point.label)
+                        Spacer()
+                        Text(String(format: "%.1f%%", point.value / totalValue * 100))
+                    }
+                }
+            }
+            .frame(height: 200)
+            .padding()
         }
+    }
+    
+    private var totalValue: Double {
+        data.reduce(0) { $0 + $1.value }
     }
 }

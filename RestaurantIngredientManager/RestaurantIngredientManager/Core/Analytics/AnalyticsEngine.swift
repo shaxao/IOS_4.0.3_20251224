@@ -92,8 +92,10 @@ class AnalyticsEngine: ObservableObject {
     
     /// 生成库存分析报表
     func generateInventoryReport(timeRange: TimeRange) async throws -> AnalyticsResult {
-        isAnalyzing = true
-        progress = 0.0
+        await MainActor.run {
+            isAnalyzing = true
+            progress = 0.0
+        }
         
         let ingredients = try ingredientRepository.fetchAll()
         progress = 0.3
@@ -127,8 +129,10 @@ class AnalyticsEngine: ObservableObject {
         已过期: \(expiredItems.count)
         """
         
-        isAnalyzing = false
-        progress = 1.0
+        await MainActor.run {
+            isAnalyzing = false
+            progress = 1.0
+        }
         
         return AnalyticsResult(
             reportType: .inventory,
@@ -141,11 +145,15 @@ class AnalyticsEngine: ObservableObject {
     
     /// 生成采购分析报表
     func generatePurchaseReport(timeRange: TimeRange) async throws -> AnalyticsResult {
-        isAnalyzing = true
-        progress = 0.0
+        await MainActor.run {
+            isAnalyzing = true
+            progress = 0.0
+        }
         
         let range = timeRange.dateRange
-        let records = try purchaseRepository.fetchByDateRange(start: range.start, end: range.end)
+        let records = try purchaseRepository.fetchAll().filter { record in
+            record.purchaseDate >= range.start && record.purchaseDate <= range.end
+        }
         progress = 0.3
         
         // 分析数据
@@ -176,8 +184,10 @@ class AnalyticsEngine: ObservableObject {
         平均成本: ¥\(String(format: "%.2f", averageCost))
         """
         
-        isAnalyzing = false
-        progress = 1.0
+        await MainActor.run {
+            isAnalyzing = false
+            progress = 1.0
+        }
         
         return AnalyticsResult(
             reportType: .purchase,
@@ -190,8 +200,10 @@ class AnalyticsEngine: ObservableObject {
     
     /// 生成过期分析报表
     func generateExpirationReport() async throws -> AnalyticsResult {
-        isAnalyzing = true
-        progress = 0.0
+        await MainActor.run {
+            isAnalyzing = true
+            progress = 0.0
+        }
         
         let ingredients = try ingredientRepository.fetchAll()
         progress = 0.3
@@ -226,8 +238,10 @@ class AnalyticsEngine: ObservableObject {
         30天内过期: \(expiring30Days.count)
         """
         
-        isAnalyzing = false
-        progress = 1.0
+        await MainActor.run {
+            isAnalyzing = false
+            progress = 1.0
+        }
         
         return AnalyticsResult(
             reportType: .expiration,
@@ -240,11 +254,15 @@ class AnalyticsEngine: ObservableObject {
     
     /// 生成趋势分析报表
     func generateTrendReport(timeRange: TimeRange) async throws -> AnalyticsResult {
-        isAnalyzing = true
-        progress = 0.0
+        await MainActor.run {
+            isAnalyzing = true
+            progress = 0.0
+        }
         
         let range = timeRange.dateRange
-        let records = try purchaseRepository.fetchByDateRange(start: range.start, end: range.end)
+        let records = try purchaseRepository.fetchAll().filter { record in
+            record.purchaseDate >= range.start && record.purchaseDate <= range.end
+        }
         progress = 0.3
         
         // 按月份分组
@@ -284,8 +302,10 @@ class AnalyticsEngine: ObservableObject {
         月度数据点: \(monthlyData.count)
         """
         
-        isAnalyzing = false
-        progress = 1.0
+        await MainActor.run {
+            isAnalyzing = false
+            progress = 1.0
+        }
         
         return AnalyticsResult(
             reportType: .trend,
